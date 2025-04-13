@@ -118,7 +118,7 @@ public class ReservaService {
         // Asignar precio y duración a la misma reserva
         asignarPrecioRegular_DuracionTotal(reserva);
 
-        LocalTime horaFin = horaInicio.plusMinutes(reserva.getDuracion_total()+1);
+        LocalTime horaFin = horaInicio.plusMinutes(reserva.getDuracion_total());
         reserva.setHoraFin(horaFin);
 
         List<Kart> kartsDisponibles = obtenerKartsDisponibles(fechaInicio, horaInicio, horaFin);
