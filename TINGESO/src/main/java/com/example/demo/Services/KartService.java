@@ -38,4 +38,9 @@ public class KartService {
             return kartRepository.save(kart);
         }).orElse(null);
     }
+
+    //Obtiene todos los karts que estan disponibles (disponibilidad = true)
+    public List<Kart> finKartsByDisponibilidad(){
+        return kartRepository.findByDisponibleTrue();
+    }
 }

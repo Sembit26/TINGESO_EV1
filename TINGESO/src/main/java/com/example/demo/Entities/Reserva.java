@@ -31,6 +31,11 @@ public class Reserva {
     )
     public List<Kart> kartsAsignados;
 
+    @ElementCollection
+    @CollectionTable(name = "personas_reserva", joinColumns = @JoinColumn(name = "reserva_id"))
+    @Column(name = "persona")
+    private List<String> personasReserva;  // Almacenar nombre y correo como String separados por un delimitador (name1,correo1)
+
     public int num_vueltas_tiempo_maximo;
     public int num_personas; //Cantidad de personas para las que se generó la reserva
     public int precio_regular;
