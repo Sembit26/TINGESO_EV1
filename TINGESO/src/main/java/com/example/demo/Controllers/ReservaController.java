@@ -6,6 +6,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -52,14 +54,31 @@ public class ReservaController {
             @SuppressWarnings("unchecked")
             List<Map<String, String>> personasAcompanantes = (List<Map<String, String>>) body.get("personasAcompanantes");
 
-            Reserva reserva = reservaService.crearReserva(clientId, numVueltasTiempoMaximo, numPersonas, personasAcompanantes);
+            // Parsear fechaInicio y horaInicio desde el body
+            String fechaInicioStr = body.get("fechaInicio").toString();  // Ej: "2025-04-20"
+            String horaInicioStr = body.get("horaInicio").toString();    // Ej: "14:00:00"
+
+            LocalDate fechaInicio = LocalDate.parse(fechaInicioStr);
+            LocalTime horaInicio = LocalTime.parse(horaInicioStr);
+
+            // Llamar al servicio con los nuevos parámetros
+            Reserva reserva = reservaService.crearReserva(
+                    clientId,
+                    numVueltasTiempoMaximo,
+                    numPersonas,
+                    personasAcompanantes,
+                    fechaInicio,
+                    horaInicio
+            );
 
             return ResponseEntity.ok(reserva);
 
         } catch (Exception e) {
+            e.printStackTrace(); // Opcional para debug
             return ResponseEntity.badRequest().build();
         }
     }
+
 
 
 }

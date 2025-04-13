@@ -9,6 +9,8 @@ import com.example.demo.Repositories.ReservaRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -93,7 +95,10 @@ public class ReservaService {
     }
 
 
-    public Reserva crearReserva(Long client_id, int numVueltasTiempoMaximo, int numPersonas, List<Map<String, String>> personasAcompanantes) {
+    public Reserva crearReserva(Long client_id, int numVueltasTiempoMaximo, int numPersonas,
+                                List<Map<String, String>> personasAcompanantes,
+                                LocalDate fechaInicio,
+                                LocalTime horaInicio) {
 
         List<String> personasReserva = new ArrayList<>();
         for (Map<String, String> persona : personasAcompanantes) {
@@ -120,8 +125,15 @@ public class ReservaService {
         reserva.setPersonasReserva(personasReserva);
         reserva.setFechaHora(java.time.LocalDateTime.now());
 
+        // Establecer fecha y hora de inicio
+        reserva.setFechaInicio(fechaInicio);
+        reserva.setHoraInicio(horaInicio);
+
         // Asignar precio y duración a la misma reserva
         asignarPrecioRegular_DuracionTotal(reserva);
+
+        LocalTime horaFin = horaInicio.plusMinutes(reserva.getDuracion_total());
+        reserva.setHoraFin(horaFin);
 
         // Obtener karts disponibles y asignarlos a la reserva
         List<Kart> kartsDisponibles = kartService.finKartsByDisponibilidad();

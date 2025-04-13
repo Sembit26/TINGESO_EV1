@@ -5,7 +5,10 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import jakarta.persistence.*;
+
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 
 @Entity
@@ -41,4 +44,8 @@ public class Reserva {
     public int precio_regular;
     public int duracion_total;
     public LocalDateTime fechaHora; // Fecha en la que se generó la reserva
+
+    public LocalDate fechaInicio; //fecha de inicio de reserva
+    public LocalTime horaInicio; // hora de inicio de reserva
+    public LocalTime horaFin; // hora de fin de la reserva
 }
