@@ -22,10 +22,6 @@ public class Reserva {
     @Column(unique = true, nullable = false)
     public Long id;
 
-    @ManyToOne
-    @JoinColumn(name = "cliente_id", nullable = false)
-    public Client cliente;
-
     @ManyToMany
     @JoinTable(
             name = "reserva_karts",
@@ -33,6 +29,10 @@ public class Reserva {
             inverseJoinColumns = @JoinColumn(name = "kart_id")
     )
     public List<Kart> kartsAsignados;
+
+    @OneToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name = "comprobante_id")
+    private Comprobante comprobante;
 
     @ElementCollection
     @CollectionTable(name = "personas_reserva", joinColumns = @JoinColumn(name = "reserva_id"))

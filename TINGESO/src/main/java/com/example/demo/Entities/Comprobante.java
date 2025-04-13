@@ -19,21 +19,13 @@ public class Comprobante {
     @Column(unique = true, nullable = false)
     public Long id;
 
-    @ManyToOne
-    @JoinColumn(name = "client_id", nullable = false)
-    private Client client;
-
-    @OneToOne
-    @JoinColumn(name = "reserva_id", nullable = false)
-    public Reserva reserva;
-
     @ElementCollection
     @CollectionTable(name = "comprobante_pagos", joinColumns = @JoinColumn(name = "comprobante_id"))
     @Column(name = "detalle_pago")
     public List<String> pagosPorPersona; // Ej: ["Juan:11200", "Pedro:11200", "Ana:8400"]
 
     public double descuento; //descuento por num de personas, cumpleanos, etc
-    public double precio_final; //precio final
-    public double iva; //valor del iva
-    public double monto_total_iva;
+    public double precio_final; //precio final (precio sin iva)
+    public double iva; //valor del iva (ej: 2390)
+    public double monto_total_iva; //precio con iva aplicado ya los descuentos
 }

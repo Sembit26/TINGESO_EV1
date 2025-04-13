@@ -1,9 +1,8 @@
 package com.example.demo.Services;
 
-import com.example.demo.Entities.Client;
+import com.example.demo.Entities.Comprobante;
 import com.example.demo.Entities.Kart;
 import com.example.demo.Entities.Reserva;
-import com.example.demo.Repositories.ClientRepository;
 import com.example.demo.Repositories.KartRepository;
 import com.example.demo.Repositories.ReservaRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,12 +23,8 @@ public class ReservaService {
 
     @Autowired
     private KartRepository kartRepository;
-
     @Autowired
-    private KartService kartService;
-
-    @Autowired
-    private ClientService clientService;
+    private ComprobanteService comprobanteService;
 
     public List<Reserva> findAll() {
         return reservaRepository.findAll();
@@ -51,7 +46,6 @@ public class ReservaService {
 
     public Reserva update(Long id, Reserva updatedReserva) {
         return reservaRepository.findById(id).map(reserva -> {
-            reserva.setCliente(updatedReserva.getCliente());
             reserva.setKartsAsignados(updatedReserva.getKartsAsignados());
             reserva.setNum_vueltas_tiempo_maximo(updatedReserva.getNum_vueltas_tiempo_maximo());
             reserva.setNum_personas(updatedReserva.getNum_personas());
@@ -81,20 +75,23 @@ public class ReservaService {
         return kartRepository.findKartsDisponibles(fecha, horaInicio, horaFin);
     }
 
-
-    public Reserva crearReserva(Long client_id, int numVueltasTiempoMaximo, int numPersonas,
+    public Reserva crearReserva(int numVueltasTiempoMaximo, int numPersonas,
                                 List<Map<String, String>> personasAcompanantes,
                                 LocalDate fechaInicio,
-                                LocalTime horaInicio) {
+                                LocalTime horaInicio,
+                                int frecuenciaCliente,
+                                String nombreCliente,
+                                List<String> cumpleaneros,
+                                List<String> nombres) {
 
-        List<String> personasReserva = new ArrayList<>();
+        List<String> personasReserva = new ArrayList<>(); //Nombre y correo de las personas acompañantes
         for (Map<String, String> persona : personasAcompanantes) {
             String nombre = persona.get("nombre");
             String correo = persona.get("correo");
             personasReserva.add(nombre + "," + correo);
         }
 
-        // Obtener al cliente que generó la reserva
+        /* Obtener al cliente que generó la reserva
         Optional<Client> cliente = clientService.findById(client_id);
         if (cliente.isEmpty()) {
             throw new RuntimeException("Cliente no encontrado");
@@ -103,10 +100,10 @@ public class ReservaService {
         Client clienteP = cliente.get();
         clienteP.setNum_visitas_al_mes(clienteP.getNum_visitas_al_mes() + 1);
         clientService.save(clienteP);
+        */
 
         // Crear nueva reserva
         Reserva reserva = new Reserva();
-        reserva.setCliente(clienteP);
         reserva.setNum_vueltas_tiempo_maximo(numVueltasTiempoMaximo);
         reserva.setNum_personas(numPersonas);
         reserva.setPersonasReserva(personasReserva);
@@ -126,6 +123,10 @@ public class ReservaService {
             throw new RuntimeException("No hay suficientes karts disponibles en ese horario");
         }
         reserva.setKartsAsignados(kartsDisponibles.subList(0, numPersonas));
+
+        Comprobante comprobante = comprobanteService.crearComprobante(reserva.getPrecio_regular(),
+                numPersonas, frecuenciaCliente, nombreCliente, cumpleaneros, nombres);
+        reserva.setComprobante(comprobante);
         // Guardar la reserva
         return reservaRepository.save(reserva);
     }

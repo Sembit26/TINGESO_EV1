@@ -9,6 +9,4 @@ import java.util.List;
 @Repository
 public interface ReservaRepository extends JpaRepository<Reserva, Long> {
 
-    // Ejemplo: buscar reservas por cliente
-    List<Reserva> findByClienteId(Long clienteId);
 }

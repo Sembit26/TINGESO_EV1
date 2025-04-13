@@ -7,6 +7,4 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface ComprobanteRepository extends JpaRepository<Comprobante, Long> {
 
-    // Opcional: buscar por reserva
-    Comprobante findByReservaId(Long reservaId);
 }

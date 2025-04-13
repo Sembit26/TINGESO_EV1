@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -73,7 +74,7 @@ public class ClientService {
         nuevoCliente.setContrasena(contrasenia); // Asegúrate de hashear la contraseña
         nuevoCliente.setBirthday(birthday);
         nuevoCliente.setNum_visitas_al_mes(0); // Inicializar a 0
-        nuevoCliente.setComprobantes(null); //Inicia con 0 comprobantes
+        nuevoCliente.setReservas(new ArrayList<>()); //Inicia con 0 reservas
 
         // Guardar el nuevo cliente
         return clientRepository.save(nuevoCliente);
