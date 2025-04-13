@@ -77,7 +77,7 @@ public class ClientController {
         String email = body.get("email");
         String contrasenia = body.get("contrasenia");
         try {
-            Client client = clientService.obtenerClientePorEmailYContrasenia(email, contrasenia);
+            Client client = clientService.login(email, contrasenia);
             return ResponseEntity.ok(client);
         } catch (RuntimeException e) {
             return ResponseEntity.status(401).body(null); // Unauthorized

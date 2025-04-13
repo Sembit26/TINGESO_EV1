@@ -19,6 +19,10 @@ public class Comprobante {
     @Column(unique = true, nullable = false)
     public Long id;
 
+    @ManyToOne
+    @JoinColumn(name = "client_id", nullable = false)
+    private Client client;
+
     @OneToOne
     @JoinColumn(name = "reserva_id", nullable = false)
     public Reserva reserva;

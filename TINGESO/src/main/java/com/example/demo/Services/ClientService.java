@@ -25,7 +25,7 @@ public class ClientService {
         return clientRepository.findByEmail(email);
     }
 
-    //Buscar clientes por Id (PUEDE QUE NO SE USE)
+    //Buscar clientes por Id
     public Optional<Client> findById(Long id) {
         return clientRepository.findById(id);
     }
@@ -62,8 +62,7 @@ public class ClientService {
         Client clienteExistentePorRut = clientRepository.findByRut(rut);
 
         if (clienteExistentePorEmail != null || clienteExistentePorRut != null) {
-            // Si el cliente ya existe por correo o RUT, retornar null
-            return null; // O lanzar una excepción personalizada
+            throw new RuntimeException("El cliente con el correo o RUT ya existe.");
         }
 
         // Si no existe, crear un nuevo cliente
@@ -74,17 +73,30 @@ public class ClientService {
         nuevoCliente.setContrasena(contrasenia); // Asegúrate de hashear la contraseña
         nuevoCliente.setBirthday(birthday);
         nuevoCliente.setNum_visitas_al_mes(0); // Inicializar a 0
+        nuevoCliente.setComprobantes(null); //Inicia con 0 comprobantes
 
         // Guardar el nuevo cliente
         return clientRepository.save(nuevoCliente);
     }
 
-    //Obtener un cliente por contraseña y correo
-    public Client obtenerClientePorEmailYContrasenia(String email, String contrasenia) {
+    //Obtener un cliente por contraseña y correo (login)
+    public Client login(String email, String contrasenia) {
         Optional<Client> clientOpt = Optional.ofNullable(clientRepository.findByEmail(email));
         if (clientOpt.isPresent()) {
             Client client = clientOpt.get();
             if(client.getContrasena().equals(contrasenia)) {
+                LocalDate today = LocalDate.now();
+                LocalDate lastLogin = client.getLastLoginDate();
+                // Si es el primer login o ha cambiado el mes, reiniciar visitas
+                if (lastLogin == null || today.getMonthValue() != lastLogin.getMonthValue() || today.getYear() != lastLogin.getYear()) {
+                    client.setNum_visitas_al_mes(0);
+                }
+
+                // Actualizar la fecha del último login
+                client.setLastLoginDate(today);
+
+                // Guardar cambios
+                clientRepository.save(client);
                 return client;
             }
             throw new RuntimeException("Contrasenia incorrecta");
