@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @RestController
@@ -38,21 +39,6 @@ public class ClientController {
         return client != null ? ResponseEntity.ok(client) : ResponseEntity.notFound().build();
     }
 
-    // Registrar nuevo cliente
-    @PostMapping("/register")
-    public ResponseEntity<Client> registerClient(@RequestBody Client client) {
-        Client registeredClient = clientService.register(
-                client.getRut(),
-                client.getName(),
-                client.getEmail(),
-                client.getContrasena(),
-                client.getBirthday()
-        );
-
-        return registeredClient != null ? ResponseEntity.ok(registeredClient) : ResponseEntity.badRequest().build();
-    }
-
-
     // Crear nuevo cliente directamente
     @PostMapping("/creatClient")
     public ResponseEntity<Client> createClient(@RequestBody Client client) {
@@ -72,4 +58,32 @@ public class ClientController {
         clientService.deleteById(id);
         return ResponseEntity.noContent().build();
     }
+
+    // Registrar nuevo cliente
+    @PostMapping("/register")
+    public ResponseEntity<Client> registerClient(@RequestBody Client client) {
+        Client registeredClient = clientService.register(
+                client.getRut(),
+                client.getName(),
+                client.getEmail(),
+                client.getContrasena(),
+                client.getBirthday()
+        );
+        return registeredClient != null ? ResponseEntity.ok(registeredClient) : ResponseEntity.badRequest().build();
+    }
+
+    //login para el cliente
+    @PostMapping("/login")
+    public ResponseEntity<Client> loginClient(@RequestBody Map<String, String> body) {
+        String email = body.get("email");
+        String contrasenia = body.get("contrasenia");
+        try {
+            Client client = clientService.obtenerClientePorEmailYContrasenia(email, contrasenia);
+            return ResponseEntity.ok(client);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(401).body(null); // Unauthorized
+        }
+    }
+
+    
 }

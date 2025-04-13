@@ -78,4 +78,17 @@ public class ClientService {
         // Guardar el nuevo cliente
         return clientRepository.save(nuevoCliente);
     }
+
+    //Obtener un cliente por contraseña y correo
+    public Client obtenerClientePorEmailYContrasenia(String email, String contrasenia) {
+        Optional<Client> clientOpt = Optional.ofNullable(clientRepository.findByEmail(email));
+        if (clientOpt.isPresent()) {
+            Client client = clientOpt.get();
+            if(client.getContrasena().equals(contrasenia)) {
+                return client;
+            }
+            throw new RuntimeException("Contrasenia incorrecta");
+        }
+        throw new RuntimeException("No se encontro el cliente con el email " + email);
+    }
 }
