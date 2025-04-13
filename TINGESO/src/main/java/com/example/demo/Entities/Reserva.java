@@ -23,9 +23,6 @@ public class Reserva {
     @JoinColumn(name = "cliente_id", nullable = false)
     public Client cliente;
 
-    @OneToOne(mappedBy = "reserva", cascade = CascadeType.ALL)
-    public Comprobante comprobante;
-
     @ManyToMany
     @JoinTable(
             name = "reserva_karts",
@@ -34,8 +31,7 @@ public class Reserva {
     )
     public List<Kart> kartsAsignados;
 
-    public int num_vueltas;
-    public int tiempo_maximo;
+    public int num_vueltas_tiempo_maximo;
     public int num_personas; //Cantidad de personas para las que se generó la reserva
     public int precio_regular;
     public int duracion_total;

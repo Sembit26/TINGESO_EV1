@@ -28,8 +28,8 @@ public class Comprobante {
     @Column(name = "detalle_pago")
     public List<String> pagosPorPersona; // Ej: ["Juan:11200", "Pedro:11200", "Ana:8400"]
 
-    public int descuento; //descuento por num de personas, cumpleanos, etc
-    public int precio_final; //precio final sin IVA
-    public int iva;
+    public double descuento; //descuento por num de personas, cumpleanos, etc
+    public double precio_final; //precio final
+    public double iva; //valor del iva
     public double monto_total_iva;
 }

@@ -34,8 +34,7 @@ public class ReservaService {
         return reservaRepository.findById(id).map(reserva -> {
             reserva.setCliente(updatedReserva.getCliente());
             reserva.setKartsAsignados(updatedReserva.getKartsAsignados());
-            reserva.setNum_vueltas(updatedReserva.getNum_vueltas());
-            reserva.setTiempo_maximo(updatedReserva.getTiempo_maximo());
+            reserva.setNum_vueltas_tiempo_maximo(updatedReserva.getNum_vueltas_tiempo_maximo());
             reserva.setNum_personas(updatedReserva.getNum_personas());
             reserva.setPrecio_regular(updatedReserva.getPrecio_regular());
             reserva.setDuracion_total(updatedReserva.getDuracion_total());
