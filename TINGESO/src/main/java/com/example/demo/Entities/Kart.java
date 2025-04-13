@@ -20,5 +20,4 @@ public class Kart {
 
     public String modelo;
     public String codificacion;
-    public boolean disponible;
 }

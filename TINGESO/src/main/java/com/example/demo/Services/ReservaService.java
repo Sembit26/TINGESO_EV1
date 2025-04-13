@@ -23,6 +23,9 @@ public class ReservaService {
     private ReservaRepository reservaRepository;
 
     @Autowired
+    private KartRepository kartRepository;
+
+    @Autowired
     private KartService kartService;
 
     @Autowired
@@ -73,25 +76,9 @@ public class ReservaService {
         }
     }
 
-
-    //Asigna kart por disponibilidad
-    public void asignarKartsDisponibles(List<Kart> kartsDisponibles, Reserva reserva) {
-        if (kartsDisponibles.size() < reserva.getNum_personas()) {
-            throw new RuntimeException("No hay suficientes karts disponibles para el número de personas");
-        }
-
-        List<Kart> kartsAsignados = new ArrayList<>();
-        for (int i = 0; i < reserva.getNum_personas(); i++) {
-            Kart kart = kartsDisponibles.get(i);
-            kart.setDisponible(false);
-            kartsAsignados.add(kart);
-        }
-
-        for (Kart kart : kartsAsignados) {
-            kartService.save(kart);
-        }
-
-        reserva.setKartsAsignados(kartsAsignados);
+    //Obtiene karts disponibles en una fecha, hora inicio y hora fin
+    public List<Kart> obtenerKartsDisponibles(LocalDate fecha, LocalTime horaInicio, LocalTime horaFin) {
+        return kartRepository.findKartsDisponibles(fecha, horaInicio, horaFin);
     }
 
 
@@ -125,20 +112,20 @@ public class ReservaService {
         reserva.setPersonasReserva(personasReserva);
         reserva.setFechaHora(java.time.LocalDateTime.now());
 
-        // Establecer fecha y hora de inicio
         reserva.setFechaInicio(fechaInicio);
         reserva.setHoraInicio(horaInicio);
 
         // Asignar precio y duración a la misma reserva
         asignarPrecioRegular_DuracionTotal(reserva);
 
-        LocalTime horaFin = horaInicio.plusMinutes(reserva.getDuracion_total());
+        LocalTime horaFin = horaInicio.plusMinutes(reserva.getDuracion_total()+1);
         reserva.setHoraFin(horaFin);
 
-        // Obtener karts disponibles y asignarlos a la reserva
-        List<Kart> kartsDisponibles = kartService.finKartsByDisponibilidad();
-        asignarKartsDisponibles(kartsDisponibles, reserva);
-
+        List<Kart> kartsDisponibles = obtenerKartsDisponibles(fechaInicio, horaInicio, horaFin);
+        if(kartsDisponibles.size() < numPersonas){
+            throw new RuntimeException("No hay suficientes karts disponibles en ese horario");
+        }
+        reserva.setKartsAsignados(kartsDisponibles.subList(0, numPersonas));
         // Guardar la reserva
         return reservaRepository.save(reserva);
     }

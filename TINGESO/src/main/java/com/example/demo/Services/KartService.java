@@ -34,13 +34,8 @@ public class KartService {
         return kartRepository.findById(id).map(kart -> {
             kart.setModelo(updatedKart.getModelo());
             kart.setCodificacion(updatedKart.getCodificacion());
-            kart.setDisponible(updatedKart.isDisponible());
             return kartRepository.save(kart);
         }).orElse(null);
     }
 
-    //Obtiene todos los karts que estan disponibles (disponibilidad = true)
-    public List<Kart> finKartsByDisponibilidad(){
-        return kartRepository.findByDisponibleTrue();
-    }
 }
