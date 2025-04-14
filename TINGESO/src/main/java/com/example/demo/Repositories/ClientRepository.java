@@ -10,5 +10,5 @@ public interface ClientRepository extends JpaRepository<Client, Long> {
     // Ejemplo de método útil si quieres buscar por rut o email
     Client findByRut(String rut);
     Client findByEmail(String email);
-
+    Client findById(long id);
 }

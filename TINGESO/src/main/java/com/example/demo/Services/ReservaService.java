@@ -23,6 +23,7 @@ public class ReservaService {
 
     @Autowired
     private KartRepository kartRepository;
+
     @Autowired
     private ComprobanteService comprobanteService;
 
@@ -90,17 +91,6 @@ public class ReservaService {
             String correo = persona.get("correo");
             personasReserva.add(nombre + "," + correo);
         }
-
-        /* Obtener al cliente que generó la reserva
-        Optional<Client> cliente = clientService.findById(client_id);
-        if (cliente.isEmpty()) {
-            throw new RuntimeException("Cliente no encontrado");
-        }
-
-        Client clienteP = cliente.get();
-        clienteP.setNum_visitas_al_mes(clienteP.getNum_visitas_al_mes() + 1);
-        clientService.save(clienteP);
-        */
 
         // Crear nueva reserva
         Reserva reserva = new Reserva();

@@ -1,4 +1,5 @@
 package com.example.demo.Controllers;
+import com.example.demo.Entities.Reserva;
 
 import com.example.demo.Entities.Client;
 import com.example.demo.Services.ClientService;
@@ -7,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -83,6 +85,37 @@ public class ClientController {
             return ResponseEntity.status(401).body(null); // Unauthorized
         }
     }
+
+    @PostMapping("/generarReserva/{id}")
+    public ResponseEntity<Reserva> generarReserva(@PathVariable Long id, @RequestBody Map<String, Object> body) {
+        try {
+            int numVueltasTiempoMaximo = Integer.parseInt(body.get("numVueltasTiempoMaximo").toString());
+            int numPersonas = Integer.parseInt(body.get("numPersonas").toString());
+            List<Map<String, String>> personas = (List<Map<String, String>>) body.get("personas");
+            LocalDate fechaInicio = LocalDate.parse(body.get("fechaInicio").toString());
+            LocalTime horaInicio = LocalTime.parse(body.get("horaInicio").toString());
+            List<String> cumpleaneros = (List<String>) body.get("cumpleaneros");
+            List<String> nombres = (List<String>) body.get("nombres");
+
+            Reserva reserva = clientService.generarReserva(
+                    id,
+                    numVueltasTiempoMaximo,
+                    numPersonas,
+                    personas,
+                    fechaInicio,
+                    horaInicio,
+                    cumpleaneros,
+                    nombres
+            );
+
+            return ResponseEntity.ok(reserva);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+
 
 
 }

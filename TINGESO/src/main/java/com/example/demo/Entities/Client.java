@@ -24,7 +24,7 @@ public class Client {
 
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn(name = "cliente_id") // Se usa esta columna en la tabla reserva
-    private List<Reserva> reservas;
+    public List<Reserva> reservas;
 
     public String rut;
     public String name;
