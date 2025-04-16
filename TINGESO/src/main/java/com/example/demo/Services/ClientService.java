@@ -3,14 +3,24 @@ package com.example.demo.Services;
 import com.example.demo.Entities.Client;
 import com.example.demo.Entities.Reserva;
 import com.example.demo.Repositories.ClientRepository;
+import com.itextpdf.kernel.pdf.PdfDocument;
+import com.itextpdf.kernel.pdf.PdfWriter;
+import com.itextpdf.layout.element.Paragraph;
+import jakarta.mail.MessagingException;
+import jakarta.mail.internet.MimeMessage;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
+import com.itextpdf.layout.Document;
 
+import java.io.File;
+import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -21,6 +31,9 @@ public class ClientService {
 
     @Autowired
     public ReservaService reservaService;
+
+    @Autowired
+    private JavaMailSender mailSender;
 
     //Obtener a todos los clientes
     public List<Client> findAll() {
@@ -113,6 +126,60 @@ public class ClientService {
         throw new RuntimeException("No se encontro el cliente con el email " + email);
     }
 
+    public void enviarCorreoReservaConPDF(String correo, String cuerpo, File archivoPdf) {
+        try {
+            // Crear un MimeMessage para enviar un correo con adjunto
+            MimeMessage mensaje = mailSender.createMimeMessage();
+
+            // Usar MimeMessageHelper para facilitar la creación del mensaje
+            MimeMessageHelper helper = new MimeMessageHelper(mensaje, true); // true habilita el soporte para adjuntos
+
+            // Configurar el destinatario, asunto y cuerpo del mensaje
+            helper.setTo(correo);
+            helper.setSubject("Resumen de tu Reserva");
+            helper.setText(cuerpo, true); // true indica que el cuerpo puede contener HTML
+
+            // Adjuntar el archivo PDF
+            helper.addAttachment("Resumen_Reserva.pdf", archivoPdf);
+
+            // Enviar el correo
+            mailSender.send(mensaje);
+
+            System.out.println("Correo enviado a " + correo);
+        } catch (MessagingException e) {
+            System.err.println("Error al enviar correo a " + correo + ": " + e.getMessage());
+        }
+    }
+
+    public File generarPDFReserva(String resumen) {
+        // Crear un archivo PDF temporal
+        String filePath = "reserva_comprobante.pdf";
+        File file = new File(filePath);
+
+        try {
+            // Crear el PdfWriter, que define el archivo de salida
+            PdfWriter writer = new PdfWriter(file);
+
+            // Crear un PdfDocument, que usará el PdfWriter
+            PdfDocument pdf = new PdfDocument(writer);
+
+            // Crear un documento de iText, que contendrá los elementos (como párrafos)
+            Document document = new Document(pdf);
+
+            // Añadir el resumen de la reserva como un párrafo al PDF
+            document.add(new Paragraph(resumen));
+
+            // Cerrar el documento
+            document.close();
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        // Devolver el archivo generado
+        return file;
+    }
+
 
     public Reserva generarReserva(Long id,
                                   int numVueltasTiempoMaximo,
@@ -120,7 +187,8 @@ public class ClientService {
                                   List<String> nombresPersonas,
                                   LocalDate fechaInicio,
                                   LocalTime horaInicio,
-                                  List<String> cumpleaneros) {
+                                  List<String> cumpleaneros,
+                                  List<String> correos) {
 
         // Buscar el cliente
         Optional<Client> clientOpt = findById(id);
@@ -135,12 +203,9 @@ public class ClientService {
         if (!nombresPersonas.contains(nombreCliente)) {
             nombresPersonas.add(0, nombreCliente);
         }
-        /*
         if(!correos.contains(cliente.getEmail())) {
             correos.add(0, cliente.getEmail());
         }
-
-         */
 
         // Crear la reserva usando el servicio
         Reserva reserva = reservaService.crearReserva(
@@ -160,8 +225,18 @@ public class ClientService {
         // Guardar el cliente con la nueva reserva
         clientRepository.save(cliente);
 
+        String resumen = reservaService.obtenerInformacionReservaConComprobante(reserva);
+        // Crear un archivo PDF con ese resumen
+        File pdf = generarPDFReserva(resumen);
+
+        // Enviar el correo con el archivo PDF a cada correo en la lista de correos
+        for (String correo : correos) {
+            enviarCorreoReservaConPDF(correo, "Aquí está tu resumen de reserva", pdf);
+        }
+
         return reserva;
     }
+
 
 
 

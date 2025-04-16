@@ -98,6 +98,7 @@ public class ClientController {
             // Convertir las listas del body
             List<String> cumpleaneros = (List<String>) body.get("cumpleaneros");
             List<String> nombres = (List<String>) body.get("nombres");
+            List<String> correos = (List<String>) body.get("correos"); // Añadir los correos al body
 
             // Llamar al service
             Reserva reserva = clientService.generarReserva(
@@ -107,7 +108,8 @@ public class ClientController {
                     nombres,             // nombresPersonas
                     fechaInicio,
                     horaInicio,
-                    cumpleaneros
+                    cumpleaneros,
+                    correos             // Pasar la lista de correos
             );
 
             return ResponseEntity.ok(reserva);
@@ -116,6 +118,7 @@ public class ClientController {
             return ResponseEntity.badRequest().build();
         }
     }
+
 
 
 
