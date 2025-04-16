@@ -1,8 +1,6 @@
 package com.example.demo.Entities;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import jakarta.persistence.*;
 
@@ -10,22 +8,25 @@ import java.util.List;
 
 @Entity
 @Table(name = "comprobantes")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 public class Comprobante {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(unique = true, nullable = false)
-    public Long id;
+    private Long id;
 
+    // Ej: "Sebastián Del Solar|Tarifa Base:20000|Desc. Grupo:10%|Desc. Especial:5%|Monto:17100|IVA:3240|Total:20340"
     @ElementCollection
-    @CollectionTable(name = "comprobante_pagos", joinColumns = @JoinColumn(name = "comprobante_id"))
+    @CollectionTable(name = "detalle_comprobante", joinColumns = @JoinColumn(name = "comprobante_id"))
     @Column(name = "detalle_pago")
-    public List<String> pagosPorPersona; // Ej: ["Juan:11200", "Pedro:11200", "Ana:8400"]
+    private List<String> detallePagoPorPersona;
 
-    public double descuento; //descuento por num de personas, cumpleanos, etc
-    public double precio_final; //precio final (precio sin iva)
-    public double iva; //valor del iva (ej: 2390)
-    public double monto_total_iva; //precio con iva aplicado ya los descuentos
+    private double descuento; // descuento total aplicado al grupo (si lo deseas mantener)
+    private double precio_final; // precio final del grupo (sin IVA)
+    private double iva; // valor del IVA total
+    private double monto_total_iva; // precio total con IVA
 }

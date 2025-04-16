@@ -1,8 +1,6 @@
 package com.example.demo.Entities;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import jakarta.persistence.*;
 
@@ -13,14 +11,15 @@ import java.util.List;
 
 @Entity
 @Table(name = "reservas")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 public class Reserva {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(unique = true, nullable = false)
-    public Long id;
+    private Long id;
 
     @ManyToMany
     @JoinTable(
@@ -28,24 +27,19 @@ public class Reserva {
             joinColumns = @JoinColumn(name = "reserva_id"),
             inverseJoinColumns = @JoinColumn(name = "kart_id")
     )
-    public List<Kart> kartsAsignados;
+    private List<Kart> kartsAsignados;
 
     @OneToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "comprobante_id")
     private Comprobante comprobante;
 
-    @ElementCollection
-    @CollectionTable(name = "personas_reserva", joinColumns = @JoinColumn(name = "reserva_id"))
-    @Column(name = "persona")
-    private List<String> personasReserva;  // Almacenar nombre y correo como String separados por un delimitador (name1,correo1)
+    private int num_vueltas_tiempo_maximo;
+    private int num_personas; //Cantidad de personas para las que se generó la reserva
+    private int precio_regular;
+    private int duracion_total;
+    private LocalDateTime fechaHora; // Fecha en la que se generó la reserva
 
-    public int num_vueltas_tiempo_maximo;
-    public int num_personas; //Cantidad de personas para las que se generó la reserva
-    public int precio_regular;
-    public int duracion_total;
-    public LocalDateTime fechaHora; // Fecha en la que se generó la reserva
-
-    public LocalDate fechaInicio; //fecha de inicio de reserva
-    public LocalTime horaInicio; // hora de inicio de reserva
-    public LocalTime horaFin; // hora de fin de la reserva
+    private LocalDate fechaInicio; //fecha de inicio de reserva
+    private LocalTime horaInicio; // hora de inicio de reserva
+    private LocalTime horaFin; // hora de fin de la reserva
 }

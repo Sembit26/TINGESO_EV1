@@ -1,8 +1,6 @@
 package com.example.demo.Entities;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import jakarta.persistence.*;
 import java.time.LocalDate;
@@ -10,14 +8,15 @@ import java.util.List;
 
 @Entity
 @Table(name = "reportes")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 public class Reportes {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(unique = true, nullable = false)
-    public Long id;
+    private Long id;
 
     @ManyToMany
     @JoinTable(
@@ -25,10 +24,9 @@ public class Reportes {
             joinColumns = @JoinColumn(name = "reporte_id"),
             inverseJoinColumns = @JoinColumn(name = "comprobante_id")
     )
-    public List<Comprobante> comprobantes;
-
-    public LocalDate fechaGeneracion; // Fecha en la que se generó el reporte
-    public LocalDate fechaInicio;
-    public LocalDate fechaFin;
-    public int total_ingresos;
+    private List<Comprobante> comprobantes;
+    private LocalDate fechaGeneracion; // Fecha en la que se generó el reporte
+    private LocalDate fechaInicio;
+    private LocalDate fechaFin;
+    private int total_ingresos;
 }

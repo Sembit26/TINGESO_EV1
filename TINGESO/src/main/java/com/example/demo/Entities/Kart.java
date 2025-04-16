@@ -1,14 +1,13 @@
 package com.example.demo.Entities;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import jakarta.persistence.*;
 
 @Entity
 @Table(name = "karts")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 public class Kart {
@@ -16,8 +15,8 @@ public class Kart {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(unique = true, nullable = false)
-    public Long id;
+    private Long id;
 
-    public String modelo;
-    public String codificacion;
+    private String modelo;
+    private String codificacion;
 }

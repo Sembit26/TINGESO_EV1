@@ -113,12 +113,14 @@ public class ClientService {
         throw new RuntimeException("No se encontro el cliente con el email " + email);
     }
 
-    public Reserva generarReserva(Long id, int numVueltasTiempoMaximo, int numPersonas,
-                                  List<Map<String, String>> personasAcompanantes,
+
+    public Reserva generarReserva(Long id,
+                                  int numVueltasTiempoMaximo,
+                                  int numPersonas,
+                                  List<String> nombresPersonas,
                                   LocalDate fechaInicio,
                                   LocalTime horaInicio,
-                                  List<String> cumpleaneros,
-                                  List<String> nombresPersonas) {
+                                  List<String> cumpleaneros) {
 
         // Buscar el cliente
         Optional<Client> clientOpt = findById(id);
@@ -130,23 +132,26 @@ public class ClientService {
         String nombreCliente = cliente.getName();
         int frecuenciaCliente = cliente.getNum_visitas_al_mes();
 
-        // Asegurarse de que el cliente esté en la lista de personas si no está ya
         if (!nombresPersonas.contains(nombreCliente)) {
-            nombresPersonas.add(nombreCliente); // No agregar al principio, solo lo añades si no está
+            nombresPersonas.add(0, nombreCliente);
         }
+        /*
+        if(!correos.contains(cliente.getEmail())) {
+            correos.add(0, cliente.getEmail());
+        }
+
+         */
 
         // Crear la reserva usando el servicio
         Reserva reserva = reservaService.crearReserva(
                 numVueltasTiempoMaximo,
                 numPersonas,
-                personasAcompanantes,
+                nombresPersonas,
                 fechaInicio,
                 horaInicio,
                 frecuenciaCliente,
                 nombreCliente,
-                cumpleaneros,
-                nombresPersonas
-        );
+                cumpleaneros);
 
         // Asociar la reserva al cliente
         cliente.getReservas().add(reserva);
@@ -157,6 +162,7 @@ public class ClientService {
 
         return reserva;
     }
+
 
 
 

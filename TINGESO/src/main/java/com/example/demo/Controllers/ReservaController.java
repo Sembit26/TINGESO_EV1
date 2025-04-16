@@ -44,48 +44,62 @@ public class ReservaController {
         reservaService.deleteById(id);
     }
 
+
     @PostMapping("/crearReserva")
     public ResponseEntity<Reserva> crearReserva(@RequestBody Map<String, Object> body) {
         try {
+            // Extraer parámetros básicos del cuerpo de la solicitud
             int numVueltasTiempoMaximo = Integer.parseInt(body.get("numVueltasTiempoMaximo").toString());
             int numPersonas = Integer.parseInt(body.get("numPersonas").toString());
 
-            @SuppressWarnings("unchecked")
-            List<Map<String, String>> personasAcompanantes = (List<Map<String, String>>) body.get("personas");
-
+            // Parsear la fecha y hora de inicio
             String fechaInicioStr = body.get("fechaInicio").toString();  // Ej: "2025-04-20"
             String horaInicioStr = body.get("horaInicio").toString();    // Ej: "14:00:00"
             LocalDate fechaInicio = LocalDate.parse(fechaInicioStr);
             LocalTime horaInicio = LocalTime.parse(horaInicioStr);
 
+            // Otros parámetros adicionales
             int frecuenciaCliente = Integer.parseInt(body.get("frecuenciaCliente").toString());
             String nombreCliente = body.get("nombreCliente").toString();
 
+            // Obtener la lista de cumpleaños (es una lista de strings)
             @SuppressWarnings("unchecked")
             List<String> cumpleaneros = (List<String>) body.get("cumpleaneros");
 
+            // Obtener la lista de personas (nombres)
             @SuppressWarnings("unchecked")
-            List<String> nombres = (List<String>) body.get("nombres");
+            List<String> nombresPersonas = (List<String>) body.get("nombresPersonas");
 
+            // Llamar al servicio para crear la reserva
             Reserva reserva = reservaService.crearReserva(
                     numVueltasTiempoMaximo,
                     numPersonas,
-                    personasAcompanantes,
+                    nombresPersonas,
                     fechaInicio,
                     horaInicio,
                     frecuenciaCliente,
                     nombreCliente,
-                    cumpleaneros,
-                    nombres
+                    cumpleaneros
             );
 
+            // Retornar la respuesta con la reserva creada
             return ResponseEntity.ok(reserva);
 
         } catch (Exception e) {
             e.printStackTrace();
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.badRequest().body(null);
         }
     }
+
+    /*
+    @GetMapping("/reservas/{id}")
+    public String obtenerInformacionReserva(@PathVariable Long id) {
+        // Llamar al servicio para obtener la información de la reserva y el comprobante
+        return reservaService.obtenerInformacionReservaConComprobante(id);
+    }
+
+     */
+
 
 
 

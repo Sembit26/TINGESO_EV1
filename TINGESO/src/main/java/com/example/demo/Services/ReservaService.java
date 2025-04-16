@@ -9,10 +9,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -22,10 +21,10 @@ public class ReservaService {
     private ReservaRepository reservaRepository;
 
     @Autowired
-    private KartRepository kartRepository;
+    private ComprobanteService comprobanteService;
 
     @Autowired
-    private ComprobanteService comprobanteService;
+    private KartService kartService;
 
     public List<Reserva> findAll() {
         return reservaRepository.findAll();
@@ -71,33 +70,26 @@ public class ReservaService {
         }
     }
 
-    //Obtiene karts disponibles en una fecha, hora inicio y hora fin
-    public List<Kart> obtenerKartsDisponibles(LocalDate fecha, LocalTime horaInicio, LocalTime horaFin) {
-        return kartRepository.findKartsDisponibles(fecha, horaInicio, horaFin);
+    public boolean esReservaPosible(LocalDate fecha, LocalTime horaInicio, LocalTime horaFin) {
+        List<Reserva> reservasQueSeCruzan = reservaRepository.findReservasQueSeCruzan(fecha, horaInicio, horaFin);
+        return reservasQueSeCruzan.isEmpty(); // Si no hay reservas cruzadas, es posible reservar
     }
 
-    public Reserva crearReserva(int numVueltasTiempoMaximo, int numPersonas,
-                                List<Map<String, String>> personasAcompanantes,
+
+    public Reserva crearReserva(int numVueltasTiempoMaximo,
+                                int numPersonas,
+                                List<String> nombresPersonas,
                                 LocalDate fechaInicio,
                                 LocalTime horaInicio,
                                 int frecuenciaCliente,
                                 String nombreCliente,
-                                List<String> cumpleaneros,
-                                List<String> nombres) {
-
-        List<String> personasReserva = new ArrayList<>(); //Nombre y correo de las personas acompañantes
-        for (Map<String, String> persona : personasAcompanantes) {
-            String nombre = persona.get("nombre");
-            String correo = persona.get("correo");
-            personasReserva.add(nombre + "," + correo);
-        }
+                                List<String> cumpleaneros) {
 
         // Crear nueva reserva
         Reserva reserva = new Reserva();
         reserva.setNum_vueltas_tiempo_maximo(numVueltasTiempoMaximo);
         reserva.setNum_personas(numPersonas);
-        reserva.setPersonasReserva(personasReserva);
-        reserva.setFechaHora(java.time.LocalDateTime.now());
+        reserva.setFechaHora(LocalDateTime.now());
 
         reserva.setFechaInicio(fechaInicio);
         reserva.setHoraInicio(horaInicio);
@@ -108,17 +100,45 @@ public class ReservaService {
         LocalTime horaFin = horaInicio.plusMinutes(reserva.getDuracion_total());
         reserva.setHoraFin(horaFin);
 
-        List<Kart> kartsDisponibles = obtenerKartsDisponibles(fechaInicio, horaInicio, horaFin);
-        if(kartsDisponibles.size() < numPersonas){
-            throw new RuntimeException("No hay suficientes karts disponibles en ese horario");
+        if (!esReservaPosible(fechaInicio, horaInicio, horaFin)) {
+            throw new RuntimeException("Ya existe una reserva en ese horario.");
         }
+
+        List<Kart> kartsDisponibles = kartService.findAll();
         reserva.setKartsAsignados(kartsDisponibles.subList(0, numPersonas));
 
         Comprobante comprobante = comprobanteService.crearComprobante(reserva.getPrecio_regular(),
-                numPersonas, frecuenciaCliente, nombreCliente, cumpleaneros, nombres);
+                numPersonas, frecuenciaCliente, nombreCliente, cumpleaneros, nombresPersonas);
         reserva.setComprobante(comprobante);
+
         // Guardar la reserva
-        return reservaRepository.save(reserva);
+        return save(reserva);
     }
+
+    public String obtenerInformacionReservaConComprobante(Reserva reserva) {
+
+        // Obtener el comprobante de la reserva
+        Comprobante comprobante = reserva.getComprobante();
+
+        // Crear el StringBuilder para la información
+        StringBuilder informacionReserva = new StringBuilder();
+        informacionReserva.append("========= INFORMACIÓN DE LA RESERVA =========\n");
+        informacionReserva.append("Código de la reserva: ").append(reserva.getId()).append("\n");
+        informacionReserva.append("Fecha y hora de la reserva: ").append(reserva.getFechaHora()).append("\n");
+        informacionReserva.append("Fecha de inicio: ").append(reserva.getFechaInicio()).append("\n");
+        informacionReserva.append("Hora de inicio: ").append(reserva.getHoraInicio()).append("\n");
+        informacionReserva.append("Hora de fin: ").append(reserva.getHoraFin()).append("\n");
+        informacionReserva.append("Número de vueltas o tiempo máximo reservado: ").append(reserva.getNum_vueltas_tiempo_maximo()).append("\n");
+        informacionReserva.append("Cantidad de personas incluidas: ").append(reserva.getNum_personas()).append("\n");
+        informacionReserva.append("Nombre de la persona que hizo la reserva: ").append(comprobante.getDetallePagoPorPersona().get(0).split("\\|")[0]).append("\n");
+
+        // Obtener y añadir la información del comprobante
+        informacionReserva.append("\n").append(comprobanteService.formatearComprobante(comprobante));
+
+        // Devolver la información formateada
+        return informacionReserva.toString();
+    }
+
+
 
 }

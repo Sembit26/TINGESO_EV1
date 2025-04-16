@@ -86,26 +86,28 @@ public class ClientController {
         }
     }
 
+
     @PostMapping("/generarReserva/{id}")
     public ResponseEntity<Reserva> generarReserva(@PathVariable Long id, @RequestBody Map<String, Object> body) {
         try {
             int numVueltasTiempoMaximo = Integer.parseInt(body.get("numVueltasTiempoMaximo").toString());
             int numPersonas = Integer.parseInt(body.get("numPersonas").toString());
-            List<Map<String, String>> personas = (List<Map<String, String>>) body.get("personas");
             LocalDate fechaInicio = LocalDate.parse(body.get("fechaInicio").toString());
             LocalTime horaInicio = LocalTime.parse(body.get("horaInicio").toString());
+
+            // Convertir las listas del body
             List<String> cumpleaneros = (List<String>) body.get("cumpleaneros");
             List<String> nombres = (List<String>) body.get("nombres");
 
+            // Llamar al service
             Reserva reserva = clientService.generarReserva(
                     id,
                     numVueltasTiempoMaximo,
                     numPersonas,
-                    personas,
+                    nombres,             // nombresPersonas
                     fechaInicio,
                     horaInicio,
-                    cumpleaneros,
-                    nombres
+                    cumpleaneros
             );
 
             return ResponseEntity.ok(reserva);
@@ -114,6 +116,9 @@ public class ClientController {
             return ResponseEntity.badRequest().build();
         }
     }
+
+
+
 
 
 
