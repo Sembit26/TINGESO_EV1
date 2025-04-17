@@ -145,7 +145,10 @@ public class ReservaController {
         }
     }
 
-    @GetMapping("/ingresos-vueltas")
+    /**
+     * Obtener el ingreso en la pista por cantidad de vueltas o tiempo maximo
+     */
+    @GetMapping("/ingresosPorVueltas")
     public Map<String, Map<String, Double>> obtenerReporteIngresosPorVueltas(
             @RequestParam("fechaInicio") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaInicio,
             @RequestParam("fechaFin") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaFin) {
@@ -157,5 +160,19 @@ public class ReservaController {
         return reservaService.generarReporteIngresosPorVueltas(fechaInicio, fechaFin);
     }
 
+    /**
+     * Obtener el ingreso en la pista por cantidad de personas
+     */
+    @GetMapping("/ingresosPorPersonas")
+    public Map<String, Map<String, Double>> obtenerReporteIngresosPorPersonas(
+            @RequestParam("fechaInicio") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaInicio,
+            @RequestParam("fechaFin") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaFin) {
+
+        if (fechaInicio.isAfter(fechaFin)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La fecha de inicio no puede ser posterior a la fecha de fin.");
+        }
+
+        return reservaService.generarReporteIngresosPorGrupoDePersonas(fechaInicio, fechaFin);
+    }
 
 }

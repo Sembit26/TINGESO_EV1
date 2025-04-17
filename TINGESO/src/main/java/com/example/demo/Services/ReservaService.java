@@ -260,6 +260,8 @@ public class ReservaService {
         return fechaActual.minusDays(diaDeLaSemana - 1);
     }
 
+    // ======================= REPORTES DE INGRESOS =======================
+
     public List<Reserva> obtenerReservasPorRangoDeMeses(LocalDate fechaInicio, LocalDate fechaFin) {
         // Validar que la fecha de inicio sea antes o igual a la fecha de fin
         if (fechaInicio.isAfter(fechaFin)) {
@@ -290,15 +292,6 @@ public class ReservaService {
                         (e1, e2) -> e1,
                         LinkedHashMap::new // Mantener el orden de inserción
                 ));
-    }
-
-
-    public Map<String, List<Reserva>> obtenerReservasAgrupadasPorMesYAnio(LocalDate fechaInicio, LocalDate fechaFin) {
-        // Obtener todas las reservas dentro del rango de fechas
-        List<Reserva> todasLasReservas = obtenerReservasPorRangoDeMeses(fechaInicio, fechaFin);
-
-        // Agrupar las reservas por mes y año
-        return agruparReservasPorMesYAnio(todasLasReservas);
     }
 
     public Map<String, Map<String, Double>> generarReporteIngresosPorVueltas(LocalDate fechaInicio, LocalDate fechaFin) {
@@ -336,7 +329,48 @@ public class ReservaService {
         return reporte;
     }
 
+    public Map<String, Map<String, Double>> generarReporteIngresosPorGrupoDePersonas(LocalDate fechaInicio, LocalDate fechaFin) {
+        List<Reserva> reservas = obtenerReservasPorRangoDeMeses(fechaInicio, fechaFin);
+        Map<String, List<Reserva>> reservasAgrupadas = agruparReservasPorMesYAnio(reservas);
 
+        Map<String, Map<String, Double>> reporte = new TreeMap<>();
 
+        for (Map.Entry<String, List<Reserva>> entrada : reservasAgrupadas.entrySet()) {
+            String mesAnio = entrada.getKey();
+            List<Reserva> reservasDelMes = entrada.getValue();
+
+            Map<String, Double> ingresosPorGrupo = new LinkedHashMap<>();
+            ingresosPorGrupo.put("1-2", 0.0);
+            ingresosPorGrupo.put("3-5", 0.0);
+            ingresosPorGrupo.put("6-10", 0.0);
+            ingresosPorGrupo.put("11-15", 0.0);
+            ingresosPorGrupo.put("TOTAL", 0.0);
+
+            for (Reserva reserva : reservasDelMes) {
+                int personas = reserva.getNum_personas();
+                Comprobante comprobante = reserva.getComprobante();
+
+                if (comprobante != null) {
+                    double monto = Math.round(comprobante.getMonto_total_iva());
+
+                    if (personas >= 1 && personas <= 2) {
+                        ingresosPorGrupo.put("1-2", ingresosPorGrupo.get("1-2") + monto);
+                    } else if (personas >= 3 && personas <= 5) {
+                        ingresosPorGrupo.put("3-5", ingresosPorGrupo.get("3-5") + monto);
+                    } else if (personas >= 6 && personas <= 10) {
+                        ingresosPorGrupo.put("6-10", ingresosPorGrupo.get("6-10") + monto);
+                    } else if (personas >= 11 && personas <= 15) {
+                        ingresosPorGrupo.put("11-15", ingresosPorGrupo.get("11-15") + monto);
+                    }
+
+                    ingresosPorGrupo.put("TOTAL", ingresosPorGrupo.get("TOTAL") + monto);
+                }
+            }
+
+            reporte.put(mesAnio, ingresosPorGrupo);
+        }
+
+        return reporte;
+    }
 
 }
