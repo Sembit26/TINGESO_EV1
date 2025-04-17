@@ -25,6 +25,8 @@ public class Reportes {
             inverseJoinColumns = @JoinColumn(name = "comprobante_id")
     )
     private List<Comprobante> comprobantes;
+
+
     private LocalDate fechaGeneracion; // Fecha en la que se generó el reporte
     private LocalDate fechaInicio;
     private LocalDate fechaFin;

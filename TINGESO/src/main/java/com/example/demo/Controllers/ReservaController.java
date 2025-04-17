@@ -3,8 +3,11 @@ package com.example.demo.Controllers;
 import com.example.demo.Entities.Reserva;
 import com.example.demo.Services.ReservaService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -142,6 +145,17 @@ public class ReservaController {
         }
     }
 
+    @GetMapping("/ingresos-vueltas")
+    public Map<String, Map<String, Double>> obtenerReporteIngresosPorVueltas(
+            @RequestParam("fechaInicio") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaInicio,
+            @RequestParam("fechaFin") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaFin) {
+
+        if (fechaInicio.isAfter(fechaFin)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La fecha de inicio no puede ser posterior a la fecha de fin.");
+        }
+
+        return reservaService.generarReporteIngresosPorVueltas(fechaInicio, fechaFin);
+    }
 
 
 }

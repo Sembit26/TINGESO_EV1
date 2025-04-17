@@ -11,8 +11,11 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
+import java.time.format.TextStyle;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class ReservaService {
@@ -256,5 +259,84 @@ public class ReservaService {
         // Restar la cantidad de días desde el lunes (si es lunes, se resta 0 días)
         return fechaActual.minusDays(diaDeLaSemana - 1);
     }
+
+    public List<Reserva> obtenerReservasPorRangoDeMeses(LocalDate fechaInicio, LocalDate fechaFin) {
+        // Validar que la fecha de inicio sea antes o igual a la fecha de fin
+        if (fechaInicio.isAfter(fechaFin)) {
+            throw new IllegalArgumentException("La fecha de inicio no puede ser posterior a la fecha de fin.");
+        }
+
+        // Ajustar fechas al primer día del mes y al último día del mes
+        LocalDate inicioMes = fechaInicio.withDayOfMonth(1);
+        LocalDate finMes = fechaFin.withDayOfMonth(fechaFin.lengthOfMonth());
+
+        return reservaRepository.findByFechaInicioBetween(inicioMes, finMes);
+    }
+
+
+    public Map<String, List<Reserva>> agruparReservasPorMesYAnio(List<Reserva> todasLasReservas) {
+        // Usamos un LinkedHashMap para mantener el orden de las claves
+        return todasLasReservas.stream()
+                .collect(Collectors.groupingBy(reserva -> {
+                    // Generar un String que combine el año y mes de la reserva
+                    return reserva.getFechaInicio().getYear() + "-" + String.format("%02d", reserva.getFechaInicio().getMonthValue());
+                }, LinkedHashMap::new, Collectors.toList())) // Usar LinkedHashMap para mantener el orden de inserción
+                .entrySet()
+                .stream()
+                .sorted(Map.Entry.comparingByKey()) // Ordenar por la clave (año-mes)
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        Map.Entry::getValue,
+                        (e1, e2) -> e1,
+                        LinkedHashMap::new // Mantener el orden de inserción
+                ));
+    }
+
+
+    public Map<String, List<Reserva>> obtenerReservasAgrupadasPorMesYAnio(LocalDate fechaInicio, LocalDate fechaFin) {
+        // Obtener todas las reservas dentro del rango de fechas
+        List<Reserva> todasLasReservas = obtenerReservasPorRangoDeMeses(fechaInicio, fechaFin);
+
+        // Agrupar las reservas por mes y año
+        return agruparReservasPorMesYAnio(todasLasReservas);
+    }
+
+    public Map<String, Map<String, Double>> generarReporteIngresosPorVueltas(LocalDate fechaInicio, LocalDate fechaFin) {
+        List<Reserva> reservas = obtenerReservasPorRangoDeMeses(fechaInicio, fechaFin);
+        Map<String, List<Reserva>> reservasAgrupadas = agruparReservasPorMesYAnio(reservas);
+
+        // Usamos TreeMap para que los meses estén ordenados
+        Map<String, Map<String, Double>> reporte = new TreeMap<>();
+
+        for (Map.Entry<String, List<Reserva>> entrada : reservasAgrupadas.entrySet()) {
+            String mesAnio = entrada.getKey();
+            List<Reserva> reservasDelMes = entrada.getValue();
+
+            Map<String, Double> ingresosPorVueltas = new HashMap<>();
+            ingresosPorVueltas.put("10", 0.0);
+            ingresosPorVueltas.put("15", 0.0);
+            ingresosPorVueltas.put("20", 0.0);
+            ingresosPorVueltas.put("TOTAL", 0.0);
+
+            for (Reserva reserva : reservasDelMes) {
+                int vueltas = reserva.getNum_vueltas_tiempo_maximo();
+                Comprobante comprobante = reserva.getComprobante(); // Asumiendo que existe el método
+                if (comprobante != null) {
+                    double monto = Math.round(comprobante.getMonto_total_iva());
+                    if (vueltas == 10 || vueltas == 15 || vueltas == 20) {
+                        ingresosPorVueltas.put(String.valueOf(vueltas), ingresosPorVueltas.get(String.valueOf(vueltas)) + monto);
+                    }
+                    ingresosPorVueltas.put("TOTAL", ingresosPorVueltas.get("TOTAL") + monto);
+                }
+            }
+
+            reporte.put(mesAnio, ingresosPorVueltas);
+        }
+
+        return reporte;
+    }
+
+
+
 
 }
