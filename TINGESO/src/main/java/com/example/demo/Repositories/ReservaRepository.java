@@ -18,4 +18,6 @@ public interface ReservaRepository extends JpaRepository<Reserva, Long> {
     List<Reserva> findReservasQueSeCruzan(@Param("fecha") LocalDate fecha,
                                           @Param("horaInicio") LocalTime horaInicio,
                                           @Param("horaFin") LocalTime horaFin);
+
+    List<Reserva> findByFechaInicioOrderByHoraInicioAsc(LocalDate fecha);
 }

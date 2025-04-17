@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -14,6 +15,8 @@ public class ComprobanteService {
 
     @Autowired
     private ComprobanteRepository comprobanteRepository;
+
+    // === CRUD Básico ===
 
     public List<Comprobante> findAll() {
         return comprobanteRepository.findAll();
@@ -41,70 +44,57 @@ public class ComprobanteService {
         }).orElse(null);
     }
 
-    public Comprobante crearComprobante(int precioRegular,
-                                        int numPersonas,
-                                        int frecuenciaCliente,
-                                        String nombreCliente,
-                                        List<String> cumpleaneros,
-                                        List<String> nombresPersonas) {
+    // === Lógica de Cálculo de Comprobante ===
 
-        double precioBaseSinIva = precioRegular / 1.19;
+    public Comprobante crearComprobante(
+            int precioRegular,
+            int numPersonas,
+            int frecuenciaCliente,
+            String nombreCliente,
+            String correoCliente,
+            Map<String, String> nombreCorreo,
+            List<String> correosCumpleaneros
+    ) {
+        double precioBaseSinIva = precioRegular;
 
-        // Descuentos por grupo
+        // --- Descuentos grupales ---
         double descuentoGrupo = 0.0;
-        if (numPersonas >= 3 && numPersonas <= 5) {
-            descuentoGrupo = 0.10;
-        } else if (numPersonas >= 6 && numPersonas <= 10) {
-            descuentoGrupo = 0.20;
-        } else if (numPersonas >= 11 && numPersonas <= 15) {
-            descuentoGrupo = 0.30;
-        }
+        if (numPersonas >= 3 && numPersonas <= 5) descuentoGrupo = 0.10;
+        else if (numPersonas >= 6 && numPersonas <= 10) descuentoGrupo = 0.20;
+        else if (numPersonas >= 11 && numPersonas <= 15) descuentoGrupo = 0.30;
 
-        // Descuento por frecuencia del cliente
+        // --- Descuento por frecuencia ---
         double descuentoFrecuencia = 0.0;
-        if (frecuenciaCliente >= 2 && frecuenciaCliente <= 4) {
-            descuentoFrecuencia = 0.10;
-        } else if (frecuenciaCliente >= 5 && frecuenciaCliente <= 6) {
-            descuentoFrecuencia = 0.20;
-        } else if (frecuenciaCliente >= 7) {
-            descuentoFrecuencia = 0.30;
-        }
+        if (frecuenciaCliente >= 2 && frecuenciaCliente <= 4) descuentoFrecuencia = 0.10;
+        else if (frecuenciaCliente >= 5 && frecuenciaCliente <= 6) descuentoFrecuencia = 0.20;
+        else if (frecuenciaCliente >= 7) descuentoFrecuencia = 0.30;
 
-        // Máximo de cumpleañeros con descuento
+        // --- Máximo de cumpleañeros con descuento ---
         int maxCumpleDescuento = 0;
         if (numPersonas >= 3 && numPersonas <= 5) maxCumpleDescuento = 1;
         else if (numPersonas >= 6 && numPersonas <= 10) maxCumpleDescuento = 2;
 
         int cumpleDescuentoAsignado = 0;
-        List<String> pagosPorPersona = new ArrayList<>();
         double totalSinIva = 0.0;
+        List<String> pagosPorPersona = new ArrayList<>();
 
-        for (String nombre : nombresPersonas) {
+        // --- Procesar grupo (excepto cliente principal) ---
+        for (Map.Entry<String, String> entry : nombreCorreo.entrySet()) {
+            String nombre = entry.getKey();
+            String correo = entry.getValue();
+
+            if (nombre.equals(nombreCliente) && correo.equals(correoCliente)) continue;
+
             double descuentoAplicado = 0.0;
             String descuentosAplicadosTexto = "";
 
-            // 1. Cumpleañero con descuento (máximo permitido)
-            if (cumpleaneros.contains(nombre) && cumpleDescuentoAsignado < maxCumpleDescuento) {
+            if (correosCumpleaneros.contains(correo) && cumpleDescuentoAsignado < maxCumpleDescuento) {
                 descuentoAplicado = 0.50;
                 descuentosAplicadosTexto = "Descuento Cumpleaños 50%";
                 cumpleDescuentoAsignado++;
-            }
-
-            // 2. Cliente que reservó (frecuente), si no es cumpleañero
-            else if (nombre.equals(nombreCliente)) {
-                if (descuentoFrecuencia > 0.0) {
-                    descuentoAplicado = descuentoFrecuencia;
-                    descuentosAplicadosTexto = "Descuento Frecuencia " + (int)(descuentoFrecuencia * 100) + "%";
-                } else {
-                    descuentoAplicado = descuentoGrupo;
-                    descuentosAplicadosTexto = "Descuento Grupal " + (int)(descuentoGrupo * 100) + "%";
-                }
-            }
-
-            // 3. Resto del grupo
-            else {
+            } else {
                 descuentoAplicado = descuentoGrupo;
-                descuentosAplicadosTexto = "Descuento Grupal " + (int)(descuentoGrupo * 100) + "%";
+                descuentosAplicadosTexto = "Descuento Grupal " + (int) (descuentoGrupo * 100) + "%";
             }
 
             double pagoSinIva = precioBaseSinIva * (1 - descuentoAplicado);
@@ -113,59 +103,57 @@ public class ComprobanteService {
 
             totalSinIva += pagoSinIva;
 
-            // Guardar información legible en el string
             String detalle = String.format(
                     "%s|Base:%.2f|%s|Monto sin IVA:%.2f|IVA:%.2f|Total:%.2f",
-                    nombre,
-                    precioBaseSinIva,
-                    descuentosAplicadosTexto,
-                    pagoSinIva,
-                    ivaPersona,
-                    pagoConIva
+                    nombre, precioBaseSinIva, descuentosAplicadosTexto, pagoSinIva, ivaPersona, pagoConIva
             );
             pagosPorPersona.add(detalle);
         }
 
+        // --- Procesar cliente principal ---
+        double descuentoCliente = 0.0;
+        String descuentosAplicadosTextoCliente = "";
+
+        if (correosCumpleaneros.contains(correoCliente) && cumpleDescuentoAsignado < maxCumpleDescuento) {
+            descuentoCliente = 0.50;
+            descuentosAplicadosTextoCliente = "Descuento Cumpleaños 50%";
+            cumpleDescuentoAsignado++;
+        } else if (descuentoFrecuencia > 0.0) {
+            descuentoCliente = descuentoFrecuencia;
+            descuentosAplicadosTextoCliente = "Descuento Frecuencia " + (int)(descuentoFrecuencia * 100) + "%";
+        } else {
+            descuentoCliente = descuentoGrupo;
+            descuentosAplicadosTextoCliente = "Descuento Grupal " + (int)(descuentoGrupo * 100) + "%";
+        }
+
+        double pagoSinIvaCliente = precioBaseSinIva * (1 - descuentoCliente);
+        double ivaCliente = pagoSinIvaCliente * 0.19;
+        double pagoConIvaCliente = pagoSinIvaCliente + ivaCliente;
+
+        totalSinIva += pagoSinIvaCliente;
+
+        String detalleCliente = String.format(
+                "%s|Base:%.2f|%s|Monto sin IVA:%.2f|IVA:%.2f|Total:%.2f",
+                nombreCliente, precioBaseSinIva, descuentosAplicadosTextoCliente,
+                pagoSinIvaCliente, ivaCliente, pagoConIvaCliente
+        );
+        pagosPorPersona.add(detalleCliente);
+
+        // --- Total general ---
         double ivaTotal = totalSinIva * 0.19;
         double totalConIva = totalSinIva + ivaTotal;
 
         Comprobante comprobante = new Comprobante();
-        comprobante.setDescuento(0.0); // puedes modificar esto si quieres guardar el descuento promedio
+        comprobante.setDescuento(0.0); // Opcional: se puede calcular descuento total o promedio
         comprobante.setPrecio_final(Math.round(totalSinIva * 100.0) / 100.0);
         comprobante.setIva(Math.round(ivaTotal * 100.0) / 100.0);
         comprobante.setMonto_total_iva(Math.round(totalConIva * 100.0) / 100.0);
-        comprobante.setDetallePagoPorPersona(pagosPorPersona); // Aquí guardas el detalle por persona
+        comprobante.setDetallePagoPorPersona(pagosPorPersona);
 
         return comprobante;
     }
 
-    public void imprimirComprobante(Comprobante comprobante) {
-        System.out.println("========= RESUMEN DEL COMPROBANTE =========");
-        System.out.printf("Subtotal (sin IVA): %.2f\n", comprobante.getPrecio_final());
-        System.out.printf("IVA: %.2f\n", comprobante.getIva());
-        System.out.printf("Total con IVA: %.2f\n", comprobante.getMonto_total_iva());
-        System.out.println("-------------------------------------------");
-        System.out.println("Detalle por persona:");
-
-        for (String detalle : comprobante.getDetallePagoPorPersona()) {
-            String[] partes = detalle.split("\\|");
-            String nombre = partes[0];
-            String base = partes[1].replace("Base:", "");
-            String descuento = partes[2];
-            String sinIva = partes[3].replace("Monto sin IVA:", "");
-            String iva = partes[4].replace("IVA:", "");
-            String total = partes[5].replace("Total:", "");
-
-            System.out.printf("- %s\n", nombre);
-            System.out.printf("  Precio Base (sin IVA): %s\n", base);
-            System.out.printf("  %s\n", descuento);
-            System.out.printf("  Monto sin IVA: %s\n", sinIva);
-            System.out.printf("  IVA: %s\n", iva);
-            System.out.printf("  Total: %s\n", total);
-            System.out.println();
-        }
-        System.out.println("===========================================");
-    }
+    // === Formatear Comprobante para imprimir ===
 
     public String formatearComprobante(Comprobante comprobante) {
         StringBuilder sb = new StringBuilder();
@@ -175,7 +163,7 @@ public class ComprobanteService {
         sb.append(String.format("IVA: %.2f\n", comprobante.getIva()));
         sb.append(String.format("Total con IVA: %.2f\n", comprobante.getMonto_total_iva()));
         sb.append("-------------------------------------------\n");
-        sb.append("Detalle por persona:\n");
+        sb.append("Detalle por persona:\n\n");
 
         for (String detalle : comprobante.getDetallePagoPorPersona()) {
             String[] partes = detalle.split("\\|");
@@ -195,14 +183,6 @@ public class ComprobanteService {
         }
 
         sb.append("===========================================\n");
-
         return sb.toString();
     }
-
-
-
-
-
-
-
 }

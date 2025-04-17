@@ -1,7 +1,7 @@
 package com.example.demo.Controllers;
-import com.example.demo.Entities.Reserva;
 
 import com.example.demo.Entities.Client;
+import com.example.demo.Entities.Reserva;
 import com.example.demo.Services.ClientService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -9,9 +9,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 @RestController
 @RequestMapping("/clients")
@@ -19,6 +17,8 @@ public class ClientController {
 
     @Autowired
     private ClientService clientService;
+
+    // ===================== CONSULTAS =====================
 
     // Obtener todos los clientes
     @GetMapping("/getAll")
@@ -40,27 +40,15 @@ public class ClientController {
         return client != null ? ResponseEntity.ok(client) : ResponseEntity.notFound().build();
     }
 
+    // ===================== CREACIÓN =====================
+
     // Crear nuevo cliente directamente
     @PostMapping("/creatClient")
     public ResponseEntity<Client> createClient(@RequestBody Client client) {
         return ResponseEntity.ok(clientService.save(client));
     }
 
-    // Actualizar cliente existente
-    @PutMapping("/UpdateClient/{id}")
-    public ResponseEntity<Client> updateClient(@PathVariable Long id, @RequestBody Client updatedClient) {
-        Client updated = clientService.update(id, updatedClient);
-        return updated != null ? ResponseEntity.ok(updated) : ResponseEntity.notFound().build();
-    }
-
-    // Eliminar cliente por ID
-    @DeleteMapping("/deleteClientById/{id}")
-    public ResponseEntity<Void> deleteClient(@PathVariable Long id) {
-        clientService.deleteById(id);
-        return ResponseEntity.noContent().build();
-    }
-
-    // Registrar nuevo cliente
+    // Registrar nuevo cliente (registro completo)
     @PostMapping("/register")
     public ResponseEntity<Client> registerClient(@RequestBody Client client) {
         Client registeredClient = clientService.register(
@@ -73,7 +61,9 @@ public class ClientController {
         return registeredClient != null ? ResponseEntity.ok(registeredClient) : ResponseEntity.badRequest().build();
     }
 
-    //login para el cliente
+    // ===================== AUTENTICACIÓN =====================
+
+    // Login para cliente
     @PostMapping("/login")
     public ResponseEntity<Client> loginClient(@RequestBody Map<String, String> body) {
         String email = body.get("email");
@@ -86,7 +76,27 @@ public class ClientController {
         }
     }
 
+    // ===================== ACTUALIZACIÓN =====================
 
+    // Actualizar cliente existente
+    @PutMapping("/UpdateClient/{id}")
+    public ResponseEntity<Client> updateClient(@PathVariable Long id, @RequestBody Client updatedClient) {
+        Client updated = clientService.update(id, updatedClient);
+        return updated != null ? ResponseEntity.ok(updated) : ResponseEntity.notFound().build();
+    }
+
+    // ===================== ELIMINACIÓN =====================
+
+    // Eliminar cliente por ID
+    @DeleteMapping("/deleteClientById/{id}")
+    public ResponseEntity<Void> deleteClient(@PathVariable Long id) {
+        clientService.deleteById(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    // ===================== RESERVAS =====================
+
+    // Generar una nueva reserva para un cliente
     @PostMapping("/generarReserva/{id}")
     public ResponseEntity<Reserva> generarReserva(@PathVariable Long id, @RequestBody Map<String, Object> body) {
         try {
@@ -95,21 +105,27 @@ public class ClientController {
             LocalDate fechaInicio = LocalDate.parse(body.get("fechaInicio").toString());
             LocalTime horaInicio = LocalTime.parse(body.get("horaInicio").toString());
 
-            // Convertir las listas del body
             List<String> cumpleaneros = (List<String>) body.get("cumpleaneros");
             List<String> nombres = (List<String>) body.get("nombres");
-            List<String> correos = (List<String>) body.get("correos"); // Añadir los correos al body
+            List<String> correos = (List<String>) body.get("correos");
 
-            // Llamar al service
+            Map<String, String> nombreCorreo = new HashMap<>();
+            if (nombres != null && correos != null && nombres.size() == correos.size()) {
+                for (int i = 0; i < nombres.size(); i++) {
+                    nombreCorreo.put(nombres.get(i), correos.get(i));
+                }
+            } else {
+                throw new IllegalArgumentException("Listas de nombres y correos no coinciden o son nulas");
+            }
+
             Reserva reserva = clientService.generarReserva(
                     id,
                     numVueltasTiempoMaximo,
                     numPersonas,
-                    nombres,             // nombresPersonas
+                    cumpleaneros,
                     fechaInicio,
                     horaInicio,
-                    cumpleaneros,
-                    correos             // Pasar la lista de correos
+                    nombreCorreo
             );
 
             return ResponseEntity.ok(reserva);
@@ -118,12 +134,4 @@ public class ClientController {
             return ResponseEntity.badRequest().build();
         }
     }
-
-
-
-
-
-
-
-
 }

@@ -8,10 +8,11 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
+/**
+ * Controlador REST para la gestión de reservas.
+ */
 @RestController
 @RequestMapping("/reservas")
 public class ReservaController {
@@ -19,70 +20,90 @@ public class ReservaController {
     @Autowired
     private ReservaService reservaService;
 
+    // ==================== CRUD BÁSICO ====================
+
+    /**
+     * Obtener todas las reservas.
+     */
     @GetMapping("/getAll")
     public List<Reserva> getAllReservas() {
         return reservaService.findAll();
     }
 
+    /**
+     * Obtener una reserva por su ID.
+     */
     @GetMapping("/getById/{id}")
     public Optional<Reserva> getReservaById(@PathVariable Long id) {
         return reservaService.findById(id);
     }
 
+    /**
+     * Crear una nueva reserva.
+     */
     @PostMapping("/createReserva")
     public Reserva createReserva(@RequestBody Reserva reserva) {
         return reservaService.save(reserva);
     }
 
+    /**
+     * Actualizar una reserva existente por ID.
+     */
     @PutMapping("/updateReservaById/{id}")
     public Reserva updateReserva(@PathVariable Long id, @RequestBody Reserva updatedReserva) {
         return reservaService.update(id, updatedReserva);
     }
 
+    /**
+     * Eliminar una reserva por ID.
+     */
     @DeleteMapping("/deleteReservaById/{id}")
     public void deleteReserva(@PathVariable Long id) {
         reservaService.deleteById(id);
     }
 
+    // ==================== FUNCIÓN PERSONALIZADA ====================
 
+    /**
+     * Crear una reserva de forma dinámica desde un mapa JSON.
+     */
     @PostMapping("/crearReserva")
     public ResponseEntity<Reserva> crearReserva(@RequestBody Map<String, Object> body) {
         try {
-            // Extraer parámetros básicos del cuerpo de la solicitud
+            // Parámetros básicos
             int numVueltasTiempoMaximo = Integer.parseInt(body.get("numVueltasTiempoMaximo").toString());
             int numPersonas = Integer.parseInt(body.get("numPersonas").toString());
 
-            // Parsear la fecha y hora de inicio
-            String fechaInicioStr = body.get("fechaInicio").toString();  // Ej: "2025-04-20"
-            String horaInicioStr = body.get("horaInicio").toString();    // Ej: "14:00:00"
-            LocalDate fechaInicio = LocalDate.parse(fechaInicioStr);
-            LocalTime horaInicio = LocalTime.parse(horaInicioStr);
+            // Fecha y hora de inicio
+            LocalDate fechaInicio = LocalDate.parse(body.get("fechaInicio").toString());
+            LocalTime horaInicio = LocalTime.parse(body.get("horaInicio").toString());
 
-            // Otros parámetros adicionales
+            // Datos del cliente
             int frecuenciaCliente = Integer.parseInt(body.get("frecuenciaCliente").toString());
             String nombreCliente = body.get("nombreCliente").toString();
+            String correoCliente = body.get("correoCliente").toString();
 
-            // Obtener la lista de cumpleaños (es una lista de strings)
+            // Correos de cumpleañeros
             @SuppressWarnings("unchecked")
-            List<String> cumpleaneros = (List<String>) body.get("cumpleaneros");
+            List<String> correosCumpleaneros = (List<String>) body.get("correosCumpleaneros");
 
-            // Obtener la lista de personas (nombres)
+            // Mapa de nombres y correos
             @SuppressWarnings("unchecked")
-            List<String> nombresPersonas = (List<String>) body.get("nombresPersonas");
+            Map<String, String> nombreCorreo = (Map<String, String>) body.get("nombreCorreo");
 
-            // Llamar al servicio para crear la reserva
+            // Crear y retornar la reserva
             Reserva reserva = reservaService.crearReserva(
                     numVueltasTiempoMaximo,
                     numPersonas,
-                    nombresPersonas,
+                    correosCumpleaneros,
                     fechaInicio,
                     horaInicio,
                     frecuenciaCliente,
                     nombreCliente,
-                    cumpleaneros
+                    correoCliente,
+                    nombreCorreo
             );
 
-            // Retornar la respuesta con la reserva creada
             return ResponseEntity.ok(reserva);
 
         } catch (Exception e) {
@@ -91,16 +112,35 @@ public class ReservaController {
         }
     }
 
-    /*
-    @GetMapping("/reservas/{id}")
-    public String obtenerInformacionReserva(@PathVariable Long id) {
-        // Llamar al servicio para obtener la información de la reserva y el comprobante
-        return reservaService.obtenerInformacionReservaConComprobante(id);
+    /**
+     * Obtener Horario Disponibles en la semana
+     */
+    @GetMapping("/horariosDisponiblesSemana")
+    public ResponseEntity<Map<LocalDate, List<String>>> getHorariosDisponiblesSemana() {
+        try {
+            LocalDate inicioSemana = reservaService.calcularInicioSemana(LocalDate.now()); // Calcula el inicio de la semana a partir de la fecha actual
+            Map<LocalDate, List<String>> horarios = reservaService.obtenerHorariosDisponiblesSemana(inicioSemana);
+            return ResponseEntity.ok(horarios);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.badRequest().build();
+        }
     }
 
+    /**
+     * Obtener Horarios que tienen reserva en la semana
      */
-
-
+    @GetMapping("/horariosOcupadosSemana")
+    public ResponseEntity<Map<LocalDate, List<String>>> getHorariosOcupadosSemana() {
+        try {
+            LocalDate inicioSemana = reservaService.calcularInicioSemana(LocalDate.now()); // Calcula el inicio de la semana a partir de la fecha actual
+            Map<LocalDate, List<String>> horariosOcupados = reservaService.obtenerHorariosOcupadosSemana(inicioSemana);
+            return ResponseEntity.ok(horariosOcupados);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.badRequest().build();
+        }
+    }
 
 
 
