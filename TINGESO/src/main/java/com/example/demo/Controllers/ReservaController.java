@@ -17,7 +17,7 @@ import java.util.*;
  * Controlador REST para la gestión de reservas.
  */
 @RestController
-@RequestMapping("/reservas")
+@RequestMapping("/api/reservas")
 public class ReservaController {
 
     @Autowired

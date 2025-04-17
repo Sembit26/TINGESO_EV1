@@ -13,7 +13,7 @@ import java.util.*;
  * Controlador REST para gestionar comprobantes.
  */
 @RestController
-@RequestMapping("/comprobantes")
+@RequestMapping("/api/comprobantes")
 public class ComprobanteController {
 
     @Autowired
