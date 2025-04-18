@@ -8,10 +8,7 @@ import com.example.demo.Repositories.ReservaRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.YearMonth;
+import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.time.format.TextStyle;
 import java.util.*;
@@ -74,6 +71,14 @@ public class ReservaService {
                                 String nombreCliente,
                                 String correoCliente,
                                 Map<String, String> nombreCorreo) {
+
+        // Validar hora de inicio permitida (entre 14:00 y 17:20 inclusive)
+        LocalTime horaMinima = LocalTime.of(14, 0);
+        LocalTime horaMaxima = LocalTime.of(19, 20);
+
+        if (horaInicio.isBefore(horaMinima) || horaInicio.isAfter(horaMaxima)) {
+            throw new RuntimeException("La hora de inicio debe estar entre las 14:00 y las 17:20.");
+        }
 
         Reserva reserva = new Reserva();
         reserva.setNum_vueltas_tiempo_maximo(numVueltasTiempoMaximo);
@@ -191,45 +196,53 @@ public class ReservaService {
     public Map<LocalDate, List<String>> obtenerHorariosDisponiblesSemana(LocalDate inicioSemana) {
         Map<LocalDate, List<String>> horariosDisponiblesSemana = new LinkedHashMap<>();
 
-        // Definir horarios del kartódromo
+        // Horario fijo del kartódromo
         LocalTime horaInicioDia = LocalTime.of(14, 0);
         LocalTime horaFinDia = LocalTime.of(20, 0);
 
-        // Iterar por cada día de la semana (7 días)
+        // Para cada día de la semana (desde el inicioSemana)
         for (int i = 0; i < 7; i++) {
             LocalDate fecha = inicioSemana.plusDays(i);
-
-            // Traer reservas de este día
             List<Reserva> reservas = getReservasByFechaInicio(fecha);
-            List<String> libres = new ArrayList<>();
+            List<String> horariosLibres = new ArrayList<>();
 
             LocalTime horaLibreActual = horaInicioDia;
+
+            // Ordenar reservas por horaInicio para asegurar procesamiento correcto
+            reservas.sort(Comparator.comparing(Reserva::getHoraInicio));
 
             for (Reserva reserva : reservas) {
                 LocalTime inicioReserva = reserva.getHoraInicio();
                 LocalTime finReserva = reserva.getHoraFin();
 
-                // Si hay un intervalo libre antes de la reserva
+                // Verificar si hay un intervalo libre antes de esta reserva
                 if (horaLibreActual.isBefore(inicioReserva)) {
-                    libres.add(horaLibreActual.toString() + " - " + inicioReserva.toString());
+                    Duration duracionLibre = Duration.between(horaLibreActual, inicioReserva);
+                    if (duracionLibre.toMinutes() >= 30) {
+                        horariosLibres.add(horaLibreActual + " - " + inicioReserva);
+                    }
                 }
 
-                // Actualizar la hora libre actual, que será el fin de la reserva
+                // Avanzar la hora libre actual si la reserva la cubre
                 if (horaLibreActual.isBefore(finReserva)) {
                     horaLibreActual = finReserva;
                 }
             }
 
-            // Si hay un intervalo libre después de la última reserva
+            // Verificar si hay espacio libre después de la última reserva hasta el cierre
             if (horaLibreActual.isBefore(horaFinDia)) {
-                libres.add(horaLibreActual.toString() + " - " + horaFinDia.toString());
+                Duration duracionLibre = Duration.between(horaLibreActual, horaFinDia);
+                if (duracionLibre.toMinutes() >= 30) {
+                    horariosLibres.add(horaLibreActual + " - " + horaFinDia);
+                }
             }
 
-            horariosDisponiblesSemana.put(fecha, libres);
+            horariosDisponiblesSemana.put(fecha, horariosLibres);
         }
 
         return horariosDisponiblesSemana;
     }
+
 
     public Map<LocalDate, List<String>> obtenerHorariosOcupadosSemana(LocalDate inicioSemana) {
         Map<LocalDate, List<String>> horariosOcupados = new HashMap<>();
