@@ -1,13 +1,24 @@
 import axios from "axios"
 
-const CLIENT_API_URL = "/api/reservas"
+const RESERVA_API_URL = "/api/reservas"
 
 const horariosDisponiblesSemana = () => {
-    return axios.get(`${CLIENT_API_URL}/horariosDisponiblesSemana`);
+    return axios.get(`${RESERVA_API_URL}/horariosDisponiblesSemana`);
 };
 
 const horariosOcupadosSemana = () => {
-    return axios.get(`${CLIENT_API_URL}/horariosOcupadosSemana`);
+    return axios.get(`${RESERVA_API_URL}/horariosOcupadosSemana`);
 }
 
-export default {horariosDisponiblesSemana, horariosOcupadosSemana};
+const obtenerReservaPorFechaYHora = (fechaInicio, horaInicio, horaFin) => {
+    return axios.get(`${RESERVA_API_URL}/obtenerReservaPorFechaYHora`, {
+      params: {
+        fechaInicio,
+        horaInicio,
+        horaFin,
+      }
+    });
+  };
+  
+
+export default {horariosDisponiblesSemana, horariosOcupadosSemana, obtenerReservaPorFechaYHora};

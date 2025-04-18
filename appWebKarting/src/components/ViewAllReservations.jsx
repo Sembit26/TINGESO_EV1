@@ -18,9 +18,6 @@ const localizer = dateFnsLocalizer({
 
 const ViewAllReservations = () => {
   const [eventos, setEventos] = useState([]);
-  const [modalOpen, setModalOpen] = useState(false);
-  const [selectedEvent, setSelectedEvent] = useState(null);
-  const [newName, setNewName] = useState("");
   const navigate = useNavigate();
 
   const handleEventClick = (event) => {
@@ -35,9 +32,17 @@ const ViewAllReservations = () => {
         }
       });
     } else if (event.tipo === 'reservado') {
-      setSelectedEvent(event);
-      setNewName(event.title);
-      setModalOpen(true);
+      const fecha = event.start.toISOString().split('T')[0];
+      const horaInicio = event.start.toTimeString().split(' ')[0].slice(0, 5);
+      const horaFin = event.end.toTimeString().split(' ')[0].slice(0, 5);
+    
+      navigate('/editarReserva', {
+        state: {
+          fecha,
+          horaInicio,
+          horaFin,
+        }
+      });
     }
   };
 
@@ -62,7 +67,7 @@ const ViewAllReservations = () => {
       reservaService.horariosDisponiblesSemana(),
       reservaService.horariosOcupadosSemana(),
     ])
-      .then(([disponiblesRes, ocupadosRes]) => {
+      .then(async ([disponiblesRes, ocupadosRes]) => {
         const disponiblesData = disponiblesRes.data;
         const ocupadosData = ocupadosRes.data;
   
@@ -81,13 +86,9 @@ const ViewAllReservations = () => {
             const end = new Date(anio, mes - 1, dia, hFin, mFin);
   
             const esHoy = start.toDateString() === now.toDateString();
-  
-            if (esHoy && start <= now) {
-              start = new Date(now); // Clonar "now"
-            }
+            if (esHoy && start <= now) start = new Date(now);
   
             const minutosDisponibles = (end.getTime() - start.getTime()) / 60000;
-  
             if (end > now && minutosDisponibles >= 30) {
               nuevosEventos.push({
                 title: 'Disponible',
@@ -100,7 +101,9 @@ const ViewAllReservations = () => {
           });
         });
   
-        // Eventos Ocupados
+        // Eventos Ocupados con nombre del cliente
+        const promises = [];
+  
         Object.entries(ocupadosData).forEach(([fecha, bloques]) => {
           const [anio, mes, dia] = fecha.split('-').map(Number);
   
@@ -112,22 +115,42 @@ const ViewAllReservations = () => {
             const start = new Date(anio, mes - 1, dia, hIni, mIni);
             const end = new Date(anio, mes - 1, dia, hFin, mFin);
   
-            nuevosEventos.push({
-              title: 'Reservado',
-              start,
-              end,
-              allDay: false,
-              tipo: 'reservado',
-            });
+            const fechaISO = `${anio}-${String(mes).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
+  
+            const prom = reservaService
+              .obtenerReservaPorFechaYHora(fechaISO, inicioStr, finStr)
+              .then(res => {
+                const nombre = res.data?.nombreCliente || 'Reservado';
+                nuevosEventos.push({
+                  title: nombre,
+                  start,
+                  end,
+                  allDay: false,
+                  tipo: 'reservado',
+                });
+              })
+              .catch(() => {
+                nuevosEventos.push({
+                  title: 'Reservado',
+                  start,
+                  end,
+                  allDay: false,
+                  tipo: 'reservado',
+                });
+              });
+  
+            promises.push(prom);
           });
         });
   
+        await Promise.all(promises);
         setEventos(nuevosEventos);
       })
       .catch((err) => {
         console.error("Error al obtener eventos:", err);
       });
   }, [navigate]);
+  
   
   
 
@@ -178,22 +201,6 @@ const ViewAllReservations = () => {
           }}
         />
       </div>
-
-      {modalOpen && (
-        <div className="edit-reservation-overlay">
-          <div className="edit-reservation-modal">
-            <h3>Editar Reserva</h3>
-            <input
-              type="text"
-              value={newName}
-              onChange={(e) => setNewName(e.target.value)}
-              placeholder="Nuevo nombre"
-            />
-            <button onClick={handleSave}>Guardar</button>
-            <button onClick={handleCancel}>Cancelar</button>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

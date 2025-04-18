@@ -202,12 +202,12 @@ public class ClientService {
 
         // Filtrar y enviar correos válidos
 
-        /*
+
         nombreCorreo.values().stream()
                 .filter(correo -> correo != null && !correo.trim().isEmpty())
                 .forEach(correo -> enviarCorreoReservaConPDF(correo, "Aquí está tu resumen de reserva", pdf));
 
-         */
+
 
 
 

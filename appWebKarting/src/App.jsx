@@ -8,6 +8,7 @@ import GenerateReservation from './components/GenerateReservation';
 import LoginEmployee from './components/LoginEmployee';
 import ViewAllReservations from './components/ViewAllReservations';
 import GenerateReservationEmployee from './components/GenerateReservationEmployee';
+import EditReservation from './components/EditReservation';
 
 function App() {
   return (
@@ -22,6 +23,7 @@ function App() {
           <Route path="/generarReserva" element={<GenerateReservation />} />
           <Route path="/horariosEmpleado" element={<ViewAllReservations />} />
           <Route path="/generarReservaEmpleado" element={<GenerateReservationEmployee />} />
+          <Route path="/editarReserva" element={<EditReservation />} />
         </Routes>
       </div>
     </Router>
