@@ -1,22 +1,29 @@
 import { useState } from 'react';
-import { Container, Typography, TextField, Button, Box, Paper } from '@mui/material';
+import {
+  Container,
+  Typography,
+  TextField,
+  Button,
+  Box,
+  Paper
+} from '@mui/material';
 import { useNavigate } from 'react-router-dom';
-import clientService from '../services/client.service';
+import empleadoService from '../services/employee.service';
 
-const Login = () => {
+const LoginEmployee = () => {
   const navigate = useNavigate();
 
   const [email, setEmail] = useState('');
-  const [contrasenia, setContrasenia] = useState('');
+  const [contrasena, setContrasena] = useState('');
   const [error, setError] = useState(null);
 
   const handleLogin = async () => {
     try {
-      const response = await clientService.login({ email, contrasenia });
-      sessionStorage.setItem('cliente', JSON.stringify(response.data));
-      navigate('/horariosDisponibles');
+      const response = await empleadoService.loginEmployee({ email, contrasena });
+      sessionStorage.setItem('empleado', JSON.stringify(response.data));
+      navigate('/horariosEmpleado'); // Cambia esto al path de la vista principal del empleado
     } catch (err) {
-      setError('Credenciales incorrectas o error en el servidor');
+      setError('Usuario no encontrado: Correo o contraseña incorrectos');
     }
   };
 
@@ -33,10 +40,10 @@ const Login = () => {
     >
       <Paper elevation={3} sx={{ padding: 4, maxWidth: 400, width: '100%' }}>
         <Typography variant="h4" align="center" gutterBottom>
-          Iniciar Sesión
+          Iniciar Sesión - Empleado
         </Typography>
         <Typography variant="body1" align="center" paragraph>
-          Ingresa tus credenciales para acceder.
+          Ingresa tus credenciales para acceder al sistema.
         </Typography>
 
         <TextField
@@ -53,8 +60,8 @@ const Login = () => {
           type="password"
           required
           fullWidth
-          value={contrasenia}
-          onChange={(e) => setContrasenia(e.target.value)}
+          value={contrasena}
+          onChange={(e) => setContrasena(e.target.value)}
           margin="normal"
         />
 
@@ -65,20 +72,8 @@ const Login = () => {
         )}
 
         <Box mt={3}>
-          <Button
-            variant="contained"
-            fullWidth
-            onClick={handleLogin}
-            sx={{ mb: 1 }}
-          >
+          <Button variant="contained" fullWidth onClick={handleLogin}>
             Ingresar
-          </Button>
-          <Button
-            variant="outlined"
-            fullWidth
-            onClick={() => navigate('/register')}
-          >
-            Registrarse
           </Button>
         </Box>
       </Paper>
@@ -86,4 +81,4 @@ const Login = () => {
   );
 };
 
-export default Login;
+export default LoginEmployee;

@@ -60,6 +60,11 @@ public class ReservaService {
         }).orElse(null);
     }
 
+    public Optional<Reserva> obtenerReservaPorFechaHoraInicioYHoraFin(LocalDate fechaInicio, LocalTime horaInicio, LocalTime horaFin) {
+        // Llamada al repositorio para buscar la reserva
+        return reservaRepository.findByFechaInicioAndHoraInicioAndHoraFin(fechaInicio, horaInicio, horaFin);
+    }
+
     // ======================= CREACIÓN DE RESERVA =======================
 
     public Reserva crearReserva(int numVueltasTiempoMaximo,
@@ -86,6 +91,7 @@ public class ReservaService {
         reserva.setFechaHora(LocalDateTime.now());
         reserva.setFechaInicio(fechaInicio);
         reserva.setHoraInicio(horaInicio);
+        reserva.setNombreCliente(nombreCliente); //ULTIMO QUE SE AGREGO
 
         // Calcular duración y precio
         asignarPrecioRegular_DuracionTotal(reserva);

@@ -6,4 +6,8 @@ const horariosDisponiblesSemana = () => {
     return axios.get(`${CLIENT_API_URL}/horariosDisponiblesSemana`);
 };
 
-export default {horariosDisponiblesSemana};
+const horariosOcupadosSemana = () => {
+    return axios.get(`${CLIENT_API_URL}/horariosOcupadosSemana`);
+}
+
+export default {horariosDisponiblesSemana, horariosOcupadosSemana};

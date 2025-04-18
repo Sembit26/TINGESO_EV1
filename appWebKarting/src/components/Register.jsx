@@ -26,7 +26,7 @@ const Register = () => {
       console.log('Enviando datos de registro:', data);
       await clientService.register(data);
 
-      navigate('/login');
+      navigate('/loginCliente');
     } catch (err) {
       console.error('Error en registro:', err);
       setError('Error al registrar. Verifica los datos o intenta más tarde.');
@@ -115,7 +115,7 @@ const Register = () => {
           <Button
             variant="outlined"
             fullWidth
-            onClick={() => navigate('/login')}
+            onClick={() => navigate('/loginCliente')}
           >
             Volver a Login
           </Button>

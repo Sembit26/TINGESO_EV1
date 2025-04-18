@@ -175,4 +175,11 @@ public class ReservaController {
         return reservaService.generarReporteIngresosPorGrupoDePersonas(fechaInicio, fechaFin);
     }
 
+    @GetMapping("/obtenerReservaPorFechaYHora")
+    public Optional<Reserva> obtenerReserva(@RequestParam LocalDate fechaInicio,
+                                            @RequestParam LocalTime horaInicio,
+                                            @RequestParam LocalTime horaFin) {
+        return reservaService.obtenerReservaPorFechaHoraInicioYHoraFin(fechaInicio, horaInicio, horaFin);
+    }
+
 }

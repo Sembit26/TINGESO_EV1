@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Calendar, dateFnsLocalizer } from "react-big-calendar";
-import { parse, startOfWeek, format, getDay, isBefore } from "date-fns";
+import { parse, startOfWeek, format, getDay } from "date-fns";
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import reservaService from "../services/reservation.service";
 import { useNavigate } from "react-router-dom";
@@ -18,16 +18,13 @@ const localizer = dateFnsLocalizer({
 
 const ViewReservationsCalendar = () => {
   const [eventos, setEventos] = useState([]);
-  const [numVueltasTiempoMaximo, setNumVueltasTiempoMaximo] = useState(10);
-  const [horaInicio, setHoraInicio] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
     const cliente = sessionStorage.getItem('cliente');
-    if (!cliente) {
-      navigate('/login');
-      return;
-    }
+    const now = new Date();
+    now.setSeconds(0);
+    now.setMilliseconds(0);
 
     reservaService.horariosDisponiblesSemana()
       .then((res) => {
@@ -41,10 +38,22 @@ const ViewReservationsCalendar = () => {
             const [hIni, mIni] = inicioStr.split(':').map(Number);
             const [hFin, mFin] = finStr.split(':').map(Number);
 
-            const start = new Date(anio, mes - 1, dia, hIni, mIni);
+            let start = new Date(anio, mes - 1, dia, hIni, mIni);
             const end = new Date(anio, mes - 1, dia, hFin, mFin);
 
-            if (!isBefore(start, new Date())) {
+            const esHoy = start.toDateString() === now.toDateString();
+
+            if (esHoy) {
+              // Ajustar el inicio si la hora actual es posterior
+              if (start <= now) {
+                start = new Date(now); // Clonar "now"
+              }
+            }
+
+            const minutosDisponibles = (end.getTime() - start.getTime()) / 60000;
+
+            // Agregar evento solo si hay al menos 30 minutos disponibles
+            if (end > now && minutosDisponibles >= 30) {
               eventosGenerados.push({
                 title: 'Disponible',
                 start,
@@ -95,8 +104,6 @@ const ViewReservationsCalendar = () => {
           }}
         />
       </div>
-
-    
     </div>
   );
 };

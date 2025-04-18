@@ -1,15 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useLocation } from 'react-router-dom';
-import { TextField, Button, Box, Typography, Container, Grid, Paper, MenuItem, Select, InputLabel, FormControl } from '@mui/material';
-import clientService from '../services/client.service';
-import { Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
+import {
+  TextField, Button, Box, Typography, Container, Grid, Paper,
+  MenuItem, Select, InputLabel, FormControl, Dialog, DialogTitle,
+  DialogContent, DialogActions
+} from '@mui/material';
+import { useNavigate, useLocation } from 'react-router-dom';
+import employeeService from '../services/employee.service';
 
-const GenerateReservation = () => {
+const GenerateReservationEmployee = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Estados para el formulario
+  // Datos del cliente
+  const [nombreCliente, setNombreCliente] = useState('');
+  const [correoCliente, setCorreoCliente] = useState('');
+
+  // Datos de la reserva
   const [numVueltasTiempoMaximo, setNumVueltasTiempoMaximo] = useState('');
   const [numPersonas, setNumPersonas] = useState('');
   const [fechaInicio, setFechaInicio] = useState('');
@@ -19,21 +25,23 @@ const GenerateReservation = () => {
   const [correos, setCorreos] = useState([]);
   const [error, setError] = useState('');
 
-  // Estados para el modal de error
-  const [openInfoModal, setOpenInfoModal] = useState(false);
-  const [infoMessage, setInfoMessage] = useState('');
-
-  // Estados dinámicos para los campos de nombres y correos
+  // Estados para campos dinámicos
   const [personasFields, setPersonasFields] = useState([]);
   const [cumpleanerosFields, setCumpleanerosFields] = useState([]);
 
-  // Este useEffect se asegura de llenar los campos de fecha y hora si vienen desde el calendario
+  // Modal
+  const [openInfoModal, setOpenInfoModal] = useState(false);
+  const [infoMessage, setInfoMessage] = useState('');
+
+  // Recibir la fecha y hora desde el state
+  const { fecha, hora } = location.state || {};
+
   useEffect(() => {
-    if (location.state?.fecha && location.state?.hora) {
-      setFechaInicio(location.state.fecha);  // Prellenar la fecha
-      setHoraInicio(location.state.hora);    // Prellenar la hora
+    if (fecha && hora) {
+      setFechaInicio(fecha);
+      setHoraInicio(hora);
     }
-  }, [location.state]);
+  }, [fecha, hora]);
 
   useEffect(() => {
     if (numPersonas > 0) {
@@ -51,45 +59,18 @@ const GenerateReservation = () => {
     }
   }, [numPersonas]);
   
+  
 
   const handleGenerarReserva = async () => {
     try {
-      console.log("Iniciando generación de reserva...");
-
-      // Validación de campos
-      if (!numVueltasTiempoMaximo || !numPersonas || !fechaInicio || !horaInicio) {
+      if (!nombreCliente || !correoCliente || !numVueltasTiempoMaximo || !numPersonas || !fechaInicio || !horaInicio) {
         setError("Todos los campos son obligatorios.");
-        console.warn("Faltan campos obligatorios");
         return;
       }
-
-      // Verificamos datos ingresados
-      console.log("Datos del formulario:");
-      console.log({
-        numVueltasTiempoMaximo,
-        numPersonas,
-        fechaInicio,
-        horaInicio,
-        cumpleaneros,
-        nombres,
-        correos,
-      });
-
-      // Obtenemos cliente desde sessionStorage
-      const clienteRaw = sessionStorage.getItem('cliente');
-      if (!clienteRaw) {
-        console.error("No se encontró el cliente en sessionStorage");
-        setError("Error interno: cliente no encontrado");
-        return;
-      }
-
-      const cliente = JSON.parse(clienteRaw);
-      console.log("Cliente obtenido:", cliente);
-
-      const idCliente = cliente.id;
-      console.log("ID Cliente:", idCliente);
 
       const data = {
+        nombreCliente,
+        correoCliente,
         numVueltasTiempoMaximo,
         numPersonas,
         fechaInicio,
@@ -99,29 +80,25 @@ const GenerateReservation = () => {
         correos,
       };
 
-      console.log("Datos que se enviarán al backend:", data);
+      console.log("Enviando datos:", data);
 
-      // Llamamos al servicio para generar la reserva
-      const respuesta = await clientService.generarReserva(idCliente, data);
-      console.log("Respuesta del servicio:", respuesta);
+      const respuesta = await employeeService.generarReservaEmpleado(data);
+      console.log("Reserva generada:", respuesta.data);
 
-      // Navegamos a la confirmación si todo sale bien
-      navigate('/horariosDisponibles');
+      navigate('/reservasConfirmadas'); // o la ruta que consideres adecuada
     } catch (err) {
-      console.error("Error al generar la reserva:", err);
-      setInfoMessage('Hola, se produjo un error, chao');
+      console.error("Error al generar la reserva por empleado:", err);
+      setInfoMessage("Hubo un error al generar la reserva. Intenta nuevamente.");
       setOpenInfoModal(true);
     }
   };
 
-  const handleCloseModal = () => {
-    setOpenInfoModal(false);
-  };
+  const handleCloseModal = () => setOpenInfoModal(false);
 
   return (
     <Container maxWidth="sm">
       <Typography variant="h4" align="center" gutterBottom>
-        Generar Reserva
+        Generar Reserva para Cliente
       </Typography>
 
       {error && (
@@ -134,7 +111,23 @@ const GenerateReservation = () => {
         <Grid item xs={12}>
           <Paper elevation={3} style={{ padding: '2rem' }}>
             <Box component="form" onSubmit={(e) => e.preventDefault()}>
-              {/* Dropdown para el número de vueltas de tiempo máximo (10, 15, 20) */}
+              <TextField
+                label="Nombre del Cliente"
+                required
+                fullWidth
+                value={nombreCliente}
+                onChange={(e) => setNombreCliente(e.target.value)}
+                margin="normal"
+              />
+              <TextField
+                label="Correo del Cliente"
+                required
+                fullWidth
+                value={correoCliente}
+                onChange={(e) => setCorreoCliente(e.target.value)}
+                margin="normal"
+              />
+
               <FormControl fullWidth margin="normal">
                 <InputLabel id="num-vueltas-label">Número de Vueltas de Tiempo Máximo</InputLabel>
                 <Select
@@ -144,14 +137,11 @@ const GenerateReservation = () => {
                   label="Número de Vueltas de Tiempo Máximo"
                 >
                   {[10, 15, 20].map((value) => (
-                    <MenuItem key={value} value={value}>
-                      {value}
-                    </MenuItem>
+                    <MenuItem key={value} value={value}>{value}</MenuItem>
                   ))}
                 </Select>
               </FormControl>
 
-              {/* Dropdown para seleccionar el número de personas (1 a 15) */}
               <FormControl fullWidth margin="normal">
                 <InputLabel id="num-personas-label">Número de Personas</InputLabel>
                 <Select
@@ -161,9 +151,7 @@ const GenerateReservation = () => {
                   label="Número de Personas"
                 >
                   {[...Array(15)].map((_, index) => (
-                    <MenuItem key={index + 1} value={index + 1}>
-                      {index + 1}
-                    </MenuItem>
+                    <MenuItem key={index + 1} value={index + 1}>{index + 1}</MenuItem>
                   ))}
                 </Select>
               </FormControl>
@@ -176,10 +164,8 @@ const GenerateReservation = () => {
                 value={fechaInicio}
                 onChange={(e) => setFechaInicio(e.target.value)}
                 margin="normal"
-                InputLabelProps={{
-                  shrink: true,
-                }}
-                disabled={!!location.state?.fecha}  // Deshabilitar si fecha está presente en el state
+                InputLabelProps={{ shrink: true }}
+                disabled // Hace que el campo de fecha no se pueda modificar
               />
               <TextField
                 label="Hora de Inicio"
@@ -191,7 +177,6 @@ const GenerateReservation = () => {
                 margin="normal"
               />
 
-              {/* Si el número de personas es mayor que 1, generamos campos para nombres y correos */}
               {numPersonas > 1 && personasFields.map((_, index) => (
                 <div key={index}>
                   <TextField
@@ -219,17 +204,16 @@ const GenerateReservation = () => {
                 </div>
               ))}
 
-              {/* Mostrar los campos para los correos de los cumpleañeros solo si hay más de 2 personas */}
               {numPersonas >= 3 && cumpleanerosFields.map((_, index) => (
                 <div key={index}>
                   <TextField
-                    label={`Correo Cumpleañero ${index + 1} (Debe estar registrado para aplicar el descuento)`}
+                    label={`Correo Cumpleañero ${index + 1}`}
                     fullWidth
                     value={cumpleaneros[index] || ''}
                     onChange={(e) => {
-                      const newCumpleaneros = [...cumpleaneros];
-                      newCumpleaneros[index] = e.target.value;
-                      setCumpleaneros(newCumpleaneros);
+                      const nuevos = [...cumpleaneros];
+                      nuevos[index] = e.target.value;
+                      setCumpleaneros(nuevos);
                     }}
                     margin="normal"
                   />
@@ -237,12 +221,7 @@ const GenerateReservation = () => {
               ))}
 
               <Box mt={2}>
-                <Button
-                  variant="contained"
-                  color="primary"
-                  fullWidth
-                  onClick={handleGenerarReserva}
-                >
+                <Button variant="contained" color="primary" fullWidth onClick={handleGenerarReserva}>
                   Generar Reserva
                 </Button>
               </Box>
@@ -251,20 +230,17 @@ const GenerateReservation = () => {
         </Grid>
       </Grid>
 
-      {/* Modal de error */}
       <Dialog open={openInfoModal} onClose={handleCloseModal}>
         <DialogTitle>Error</DialogTitle>
         <DialogContent>
           <Typography>{infoMessage}</Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCloseModal} color="primary">
-            Cerrar
-          </Button>
+          <Button onClick={handleCloseModal} color="primary">Cerrar</Button>
         </DialogActions>
       </Dialog>
     </Container>
   );
 };
 
-export default GenerateReservation;
+export default GenerateReservationEmployee;

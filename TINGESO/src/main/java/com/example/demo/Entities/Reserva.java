@@ -38,6 +38,7 @@ public class Reserva {
     private int precio_regular;
     private int duracion_total;
     private LocalDateTime fechaHora; // Fecha en la que se generó la reserva
+    private String nombreCliente;
 
     private LocalDate fechaInicio; //fecha de inicio de reserva
     private LocalTime horaInicio; // hora de inicio de reserva

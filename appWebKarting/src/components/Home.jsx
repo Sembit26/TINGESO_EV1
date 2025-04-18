@@ -18,11 +18,14 @@ const Home = () => {
           mt: 3,
         }}
       >
-        <Button variant="contained" color="primary" onClick={() => navigate('/login')}>
-          Login
+        <Button variant="contained" color="primary" onClick={() => navigate('/loginCliente')}>
+          Login para Clientes
         </Button>
         <Button variant="contained" color="primary" onClick={() => navigate('/register')}>
-          Register
+          Register para Clientes
+        </Button>
+        <Button variant="contained" color="primary" onClick={() => navigate('/loginEmpleado')}>
+          Login para Empleados
         </Button>
       </Box>
     </Container>
