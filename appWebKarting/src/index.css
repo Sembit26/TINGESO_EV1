@@ -157,6 +157,14 @@ button:focus-visible {
 }
 
 
+.hamburger-menu {
+  font-size: 30px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: black; /* Cambia el color a negro */
+  z-index: 1000;
+}
 
 
 

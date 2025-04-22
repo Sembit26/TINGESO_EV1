@@ -2,12 +2,12 @@ import axios from "axios"
 
 const RESERVA_API_URL = "/api/reservas"
 
-const horariosDisponiblesSemana = () => {
-    return axios.get(`${RESERVA_API_URL}/horariosDisponiblesSemana`);
+const horariosDisponiblesMes = () => {
+  return axios.get(`${RESERVA_API_URL}/horariosDisponiblesMes`);
 };
 
-const horariosOcupadosSemana = () => {
-    return axios.get(`${RESERVA_API_URL}/horariosOcupadosSemana`);
+const horariosOcupadosMes = () => {
+  return axios.get(`${RESERVA_API_URL}/horariosOcupadosMes`);
 }
 
 const obtenerReservaPorFechaYHora = (fechaInicio, horaInicio, horaFin) => {
@@ -18,7 +18,44 @@ const obtenerReservaPorFechaYHora = (fechaInicio, horaInicio, horaFin) => {
         horaFin,
       }
     });
-  };
-  
+};
 
-export default {horariosDisponiblesSemana, horariosOcupadosSemana, obtenerReservaPorFechaYHora};
+// Actualizar una reserva por ID
+const actualizarReservaPorId = (id, updatedReserva) => {
+  return axios.put(`${RESERVA_API_URL}/updateReservaById/${id}`, updatedReserva);
+};
+
+// Obtener información de una reserva por ID
+const obtenerInformacionReserva = (id) => {
+  return axios.get(`${RESERVA_API_URL}/getInfoReserva/${id}`);
+};
+
+// Eliminar una reserva por ID
+const eliminarReservaPorId = (id) => {
+  return axios.delete(`${RESERVA_API_URL}/deleteReservaById/${id}`);
+};
+
+// Obtener ingresos por vueltas
+const obtenerIngresosPorVueltas = (fechaInicio, fechaFin) => {
+  return axios.get(`${RESERVA_API_URL}/ingresosPorVueltas`, {
+    params: { fechaInicio, fechaFin }
+  });
+};
+
+// Obtener ingresos por cantidad de personas
+const obtenerIngresosPorPersonas = (fechaInicio, fechaFin) => {
+  return axios.get(`${RESERVA_API_URL}/ingresosPorPersonas`, {
+    params: { fechaInicio, fechaFin }
+  });
+};
+
+export default {
+  obtenerReservaPorFechaYHora,
+  horariosDisponiblesMes,
+  horariosOcupadosMes,
+  actualizarReservaPorId,
+  obtenerInformacionReserva,
+  eliminarReservaPorId,
+  obtenerIngresosPorVueltas,
+  obtenerIngresosPorPersonas
+};

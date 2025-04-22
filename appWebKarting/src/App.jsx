@@ -9,6 +9,10 @@ import LoginEmployee from './components/LoginEmployee';
 import ViewAllReservations from './components/ViewAllReservations';
 import GenerateReservationEmployee from './components/GenerateReservationEmployee';
 import EditReservation from './components/EditReservation';
+import EditReservationAdvanced from './components/EditReservationAdvanced';
+import ReportKarting from './components/ReportsKarting';
+import ReportIncomePerLap from './components/ReportIncomePerLap';
+import ReportIncomePerPerson from './components/ReportIncomePerPerson';
 
 function App() {
   return (
@@ -24,6 +28,14 @@ function App() {
           <Route path="/horariosEmpleado" element={<ViewAllReservations />} />
           <Route path="/generarReservaEmpleado" element={<GenerateReservationEmployee />} />
           <Route path="/editarReserva" element={<EditReservation />} />
+          <Route path="/editarReservaAvanzada" element={<EditReservationAdvanced />} />
+          <Route path="/reporteKarting" element={<ReportKarting />} />
+          <Route path="/reporteIngresoPorVuelta" element={<ReportIncomePerLap />} />
+          <Route path="/reporteIngresoPorPersona" element={<ReportIncomePerPerson />} />
+
+
+
+
         </Routes>
       </div>
     </Router>

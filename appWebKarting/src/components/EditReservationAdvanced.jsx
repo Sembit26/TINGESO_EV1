@@ -6,89 +6,87 @@ import {
 } from '@mui/material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import employeeService from '../services/employee.service';
+import reservationService from '../services/reservation.service';
 
-const GenerateReservationEmployee = () => {
+const EditReservationAdvanced = () => {
   const navigate = useNavigate();
-  const location = useLocation();
+  const { state } = useLocation();
+  const { id, fecha, horaInicio } = state || {};
 
-  // Datos del cliente
+  // Datos de reserva
   const [nombreCliente, setNombreCliente] = useState('');
   const [correoCliente, setCorreoCliente] = useState('');
-
-  // Datos de la reserva
   const [numVueltasTiempoMaximo, setNumVueltasTiempoMaximo] = useState('');
   const [numPersonas, setNumPersonas] = useState('');
   const [fechaInicio, setFechaInicio] = useState('');
-  const [horaInicio, setHoraInicio] = useState('');
+  const [horaInicioState, setHoraInicioState] = useState('');
+
   const [cumpleaneros, setCumpleaneros] = useState([]);
   const [nombres, setNombres] = useState([]);
   const [correos, setCorreos] = useState([]);
-  const [error, setError] = useState('');
 
-  // Estados para campos dinámicos
   const [personasFields, setPersonasFields] = useState([]);
   const [cumpleanerosFields, setCumpleanerosFields] = useState([]);
 
-  // Modal
+  const [error, setError] = useState('');
   const [openInfoModal, setOpenInfoModal] = useState(false);
   const [infoMessage, setInfoMessage] = useState('');
 
-  // Recibir la fecha y hora desde el state
-  const { fecha, hora } = location.state || {};
-
   useEffect(() => {
-    if (fecha && hora) {
+    if (fecha && horaInicio) {
       setFechaInicio(fecha);
-      setHoraInicio(hora);
+      setHoraInicioState(horaInicio);
     }
-  }, [fecha, hora]);
+  }, [fecha, horaInicio]);
 
   useEffect(() => {
     if (numPersonas > 0) {
       const camposPersonas = numPersonas > 1 ? numPersonas - 1 : 0;
-  
+
       let camposCumple = 0;
       if (numPersonas >= 3 && numPersonas <= 5) {
         camposCumple = 1;
       } else if (numPersonas >= 6 && numPersonas <= 10) {
         camposCumple = 2;
       }
-  
+
       setPersonasFields(new Array(camposPersonas).fill(''));
       setCumpleanerosFields(new Array(camposCumple).fill(''));
     }
   }, [numPersonas]);
-  
-  
 
-  const handleGenerarReserva = async () => {
+  const handleGuardarCambios = async () => {
     try {
-      if (!nombreCliente || !correoCliente || !numVueltasTiempoMaximo || !numPersonas || !fechaInicio || !horaInicio) {
+      if (!nombreCliente || !correoCliente || !numVueltasTiempoMaximo || !numPersonas || !fechaInicio || !horaInicioState) {
         setError("Todos los campos son obligatorios.");
         return;
       }
 
+      // 1. Eliminar reserva anterior
+      await reservationService.eliminarReservaPorId(id);
+      console.log(`Reserva con ID ${id} eliminada.`);
+
+      // 2. Generar nueva reserva
       const data = {
         nombreCliente,
         correoCliente,
         numVueltasTiempoMaximo,
         numPersonas,
         fechaInicio,
-        horaInicio,
+        horaInicio: horaInicioState,
         cumpleaneros,
         nombres,
         correos,
       };
 
-      console.log("Enviando datos:", data);
-
       const respuesta = await employeeService.generarReservaEmpleado(data);
-      console.log("Reserva generada:", respuesta.data);
+      console.log("Nueva reserva generada:", respuesta.data);
 
-      navigate('/horariosEmpleado'); // o la ruta que consideres adecuada
+      // 3. Navegar
+      navigate('/horariosEmpleado');
     } catch (err) {
-      console.error("Error al generar la reserva por empleado:", err);
-      setInfoMessage("Hubo un error al generar la reserva. Intenta nuevamente.");
+      console.error("Error al guardar los cambios:", err);
+      setInfoMessage("Hubo un error al guardar los cambios. Intenta nuevamente.");
       setOpenInfoModal(true);
     }
   };
@@ -98,7 +96,7 @@ const GenerateReservationEmployee = () => {
   return (
     <Container maxWidth="sm">
       <Typography variant="h4" align="center" gutterBottom>
-        Generar Reserva para Cliente
+        Editar Reserva
       </Typography>
 
       {error && (
@@ -129,12 +127,12 @@ const GenerateReservationEmployee = () => {
               />
 
               <FormControl fullWidth margin="normal">
-                <InputLabel id="num-vueltas-label">Número de Vueltas o Tiempo Máximo (minutos)</InputLabel>
+                <InputLabel id="num-vueltas-label">Número de Vueltas o Tiempo Máximo</InputLabel>
                 <Select
                   labelId="num-vueltas-label"
                   value={numVueltasTiempoMaximo}
                   onChange={(e) => setNumVueltasTiempoMaximo(e.target.value)}
-                  label="Número de Vueltas de Tiempo Máximo"
+                  label="Número de Vueltas o Tiempo Máximo"
                 >
                   {[10, 15, 20].map((value) => (
                     <MenuItem key={value} value={value}>{value}</MenuItem>
@@ -162,18 +160,17 @@ const GenerateReservationEmployee = () => {
                 fullWidth
                 type="date"
                 value={fechaInicio}
-                onChange={(e) => setFechaInicio(e.target.value)}
                 margin="normal"
                 InputLabelProps={{ shrink: true }}
-                disabled // Hace que el campo de fecha no se pueda modificar
+                disabled
               />
               <TextField
                 label="Hora de Inicio"
                 required
                 fullWidth
                 type="time"
-                value={horaInicio}
-                onChange={(e) => setHoraInicio(e.target.value)}
+                value={horaInicioState}
+                onChange={(e) => setHoraInicioState(e.target.value)}
                 margin="normal"
               />
 
@@ -184,9 +181,9 @@ const GenerateReservationEmployee = () => {
                     fullWidth
                     value={nombres[index] || ''}
                     onChange={(e) => {
-                      const newNombres = [...nombres];
-                      newNombres[index] = e.target.value;
-                      setNombres(newNombres);
+                      const nuevos = [...nombres];
+                      nuevos[index] = e.target.value;
+                      setNombres(nuevos);
                     }}
                     margin="normal"
                   />
@@ -195,9 +192,9 @@ const GenerateReservationEmployee = () => {
                     fullWidth
                     value={correos[index] || ''}
                     onChange={(e) => {
-                      const newCorreos = [...correos];
-                      newCorreos[index] = e.target.value;
-                      setCorreos(newCorreos);
+                      const nuevos = [...correos];
+                      nuevos[index] = e.target.value;
+                      setCorreos(nuevos);
                     }}
                     margin="normal"
                   />
@@ -221,8 +218,8 @@ const GenerateReservationEmployee = () => {
               ))}
 
               <Box mt={2}>
-                <Button variant="contained" color="primary" fullWidth onClick={handleGenerarReserva}>
-                  Generar Reserva
+                <Button variant="contained" color="primary" fullWidth onClick={handleGuardarCambios}>
+                  Guardar cambios
                 </Button>
               </Box>
             </Box>
@@ -243,4 +240,4 @@ const GenerateReservationEmployee = () => {
   );
 };
 
-export default GenerateReservationEmployee;
+export default EditReservationAdvanced;

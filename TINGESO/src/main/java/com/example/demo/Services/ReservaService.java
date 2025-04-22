@@ -50,12 +50,7 @@ public class ReservaService {
 
     public Reserva update(Long id, Reserva updatedReserva) {
         return reservaRepository.findById(id).map(reserva -> {
-            reserva.setKartsAsignados(updatedReserva.getKartsAsignados());
-            reserva.setNum_vueltas_tiempo_maximo(updatedReserva.getNum_vueltas_tiempo_maximo());
-            reserva.setNum_personas(updatedReserva.getNum_personas());
-            reserva.setPrecio_regular(updatedReserva.getPrecio_regular());
-            reserva.setDuracion_total(updatedReserva.getDuracion_total());
-            reserva.setFechaHora(updatedReserva.getFechaHora());
+            reserva.setNombreCliente(updatedReserva.getNombreCliente());
             return reservaRepository.save(reserva);
         }).orElse(null);
     }
@@ -77,25 +72,41 @@ public class ReservaService {
                                 String correoCliente,
                                 Map<String, String> nombreCorreo) {
 
-        // Validar hora de inicio permitida (entre 14:00 y 17:20 inclusive)
-        LocalTime horaMinima = LocalTime.of(14, 0);
-        LocalTime horaMaxima = LocalTime.of(19, 20);
+        // Validar hora de inicio permitida según el número de vueltas
+        LocalTime horaMaxima;
 
-        if (horaInicio.isBefore(horaMinima) || horaInicio.isAfter(horaMaxima)) {
-            throw new RuntimeException("La hora de inicio debe estar entre las 14:00 y las 17:20.");
+        // Definir la hora máxima según el número de vueltas
+        if (numVueltasTiempoMaximo == 10) {
+            horaMaxima = LocalTime.of(19, 30);
+        } else if (numVueltasTiempoMaximo == 15) {
+            horaMaxima = LocalTime.of(19, 25);
+        } else if (numVueltasTiempoMaximo == 20) {
+            horaMaxima = LocalTime.of(19, 20);
+        } else {
+            // Si el numVueltasTiempoMaximo no está en los valores esperados, se establece una hora máxima general
+            horaMaxima = LocalTime.of(19, 20);
         }
 
+        LocalTime horaMinima = LocalTime.of(14, 0);
+
+        // Verificar que la hora de inicio esté dentro del rango permitido
+        if (horaInicio.isBefore(horaMinima) || horaInicio.isAfter(horaMaxima)) {
+            throw new RuntimeException("La hora de inicio debe estar entre las 14:00 y las " + horaMaxima + ".");
+        }
+
+        // Crear la reserva
         Reserva reserva = new Reserva();
         reserva.setNum_vueltas_tiempo_maximo(numVueltasTiempoMaximo);
         reserva.setNum_personas(numPersonas);
         reserva.setFechaHora(LocalDateTime.now());
         reserva.setFechaInicio(fechaInicio);
         reserva.setHoraInicio(horaInicio);
-        reserva.setNombreCliente(nombreCliente); //ULTIMO QUE SE AGREGO
+        reserva.setNombreCliente(nombreCliente);
 
         // Calcular duración y precio
         asignarPrecioRegular_DuracionTotal(reserva);
 
+        // Calcular la hora de fin según la duración
         LocalTime horaFin = horaInicio.plusMinutes(reserva.getDuracion_total());
         reserva.setHoraFin(horaFin);
 
@@ -120,8 +131,10 @@ public class ReservaService {
         );
         reserva.setComprobante(comprobante);
 
+        // Guardar la reserva
         return save(reserva);
     }
+
 
     // ======================= LÓGICA DE PRECIO Y DURACIÓN =======================
 
@@ -175,8 +188,9 @@ public class ReservaService {
 
     // ======================= INFORMACIÓN =======================
 
-    public String obtenerInformacionReservaConComprobante(Reserva reserva, String nombreCliente) {
+    public String obtenerInformacionReservaConComprobante(Reserva reserva) {
         Comprobante comprobante = reserva.getComprobante();
+        String nombreCliente = reserva.getNombreCliente();
 
         DateTimeFormatter formatterFechaHora = DateTimeFormatter.ofPattern("yy/MM/dd HH:mm:ss");
         DateTimeFormatter formatterFecha = DateTimeFormatter.ofPattern("yy/MM/dd");
@@ -199,29 +213,54 @@ public class ReservaService {
 
     // ======================= HORARIOS DISPONIBLES =======================
 
-    public Map<LocalDate, List<String>> obtenerHorariosDisponiblesSemana(LocalDate inicioSemana) {
-        Map<LocalDate, List<String>> horariosDisponiblesSemana = new LinkedHashMap<>();
+    public Map<LocalDate, List<String>> obtenerHorariosOcupadosMes(LocalDate fechaCualquieraDelMes) {
+        Map<LocalDate, List<String>> horariosOcupados = new HashMap<>();
+
+        // Obtener el primer y último día del mes
+        LocalDate primerDiaDelMes = fechaCualquieraDelMes.withDayOfMonth(1);
+        LocalDate ultimoDiaDelMes = fechaCualquieraDelMes.withDayOfMonth(fechaCualquieraDelMes.lengthOfMonth());
+
+        // Recorrer todos los días del mes
+        for (LocalDate dia = primerDiaDelMes; !dia.isAfter(ultimoDiaDelMes); dia = dia.plusDays(1)) {
+            List<Reserva> reservasDelDia = reservaRepository.findByFechaInicioOrderByHoraInicioAsc(dia);
+            List<String> horarios = new ArrayList<>();
+
+            for (Reserva reserva : reservasDelDia) {
+                LocalTime horaInicio = reserva.getHoraInicio();
+                LocalTime horaFin = reserva.getHoraFin();
+                horarios.add(horaInicio + " - " + horaFin);
+            }
+
+            horariosOcupados.put(dia, horarios);
+        }
+
+        return horariosOcupados;
+    }
+
+    public Map<LocalDate, List<String>> obtenerHorariosDisponiblesMes(LocalDate fechaCualquieraDelMes) {
+        Map<LocalDate, List<String>> horariosDisponiblesMes = new LinkedHashMap<>();
 
         // Horario fijo del kartódromo
         LocalTime horaInicioDia = LocalTime.of(14, 0);
         LocalTime horaFinDia = LocalTime.of(20, 0);
 
-        // Para cada día de la semana (desde el inicioSemana)
-        for (int i = 0; i < 7; i++) {
-            LocalDate fecha = inicioSemana.plusDays(i);
+        // Obtener primer y último día del mes
+        LocalDate primerDiaDelMes = fechaCualquieraDelMes.withDayOfMonth(1);
+        LocalDate ultimoDiaDelMes = fechaCualquieraDelMes.withDayOfMonth(fechaCualquieraDelMes.lengthOfMonth());
+
+        for (LocalDate fecha = primerDiaDelMes; !fecha.isAfter(ultimoDiaDelMes); fecha = fecha.plusDays(1)) {
             List<Reserva> reservas = getReservasByFechaInicio(fecha);
             List<String> horariosLibres = new ArrayList<>();
 
             LocalTime horaLibreActual = horaInicioDia;
 
-            // Ordenar reservas por horaInicio para asegurar procesamiento correcto
+            // Ordenar reservas por hora de inicio
             reservas.sort(Comparator.comparing(Reserva::getHoraInicio));
 
             for (Reserva reserva : reservas) {
                 LocalTime inicioReserva = reserva.getHoraInicio();
                 LocalTime finReserva = reserva.getHoraFin();
 
-                // Verificar si hay un intervalo libre antes de esta reserva
                 if (horaLibreActual.isBefore(inicioReserva)) {
                     Duration duracionLibre = Duration.between(horaLibreActual, inicioReserva);
                     if (duracionLibre.toMinutes() >= 30) {
@@ -229,13 +268,11 @@ public class ReservaService {
                     }
                 }
 
-                // Avanzar la hora libre actual si la reserva la cubre
                 if (horaLibreActual.isBefore(finReserva)) {
                     horaLibreActual = finReserva;
                 }
             }
 
-            // Verificar si hay espacio libre después de la última reserva hasta el cierre
             if (horaLibreActual.isBefore(horaFinDia)) {
                 Duration duracionLibre = Duration.between(horaLibreActual, horaFinDia);
                 if (duracionLibre.toMinutes() >= 30) {
@@ -243,40 +280,10 @@ public class ReservaService {
                 }
             }
 
-            horariosDisponiblesSemana.put(fecha, horariosLibres);
+            horariosDisponiblesMes.put(fecha, horariosLibres);
         }
 
-        return horariosDisponiblesSemana;
-    }
-
-
-    public Map<LocalDate, List<String>> obtenerHorariosOcupadosSemana(LocalDate inicioSemana) {
-        Map<LocalDate, List<String>> horariosOcupados = new HashMap<>();
-        for (int i = 0; i < 7; i++) {
-            LocalDate dia = inicioSemana.plusDays(i); // Obtener cada día de la semana
-            List<Reserva> reservasDelDia = reservaRepository.findByFechaInicioOrderByHoraInicioAsc(dia); // Obtener reservas de ese día
-            List<String> horarios = new ArrayList<>();
-
-            // Recorrer las reservas y extraer los horarios ocupados
-            for (Reserva reserva : reservasDelDia) {
-                LocalTime horaInicio = reserva.getHoraInicio();
-                LocalTime horaFin = reserva.getHoraFin();
-
-                // Formatear los horarios ocupados y añadirlos a la lista
-                horarios.add(horaInicio.toString() + " - " + horaFin.toString());
-            }
-            horariosOcupados.put(dia, horarios); // Añadir los horarios ocupados para ese día
-        }
-        return horariosOcupados;
-    }
-
-    public LocalDate calcularInicioSemana(LocalDate fechaActual) {
-        // Calcular el inicio de la semana (lunes) a partir de la fecha actual
-        // LocalDate.now().getDayOfWeek() devuelve el día de la semana (por ejemplo, MONDAY, TUESDAY, etc.)
-        int diaDeLaSemana = fechaActual.getDayOfWeek().getValue(); // 1 = Lunes, 7 = Domingo
-
-        // Restar la cantidad de días desde el lunes (si es lunes, se resta 0 días)
-        return fechaActual.minusDays(diaDeLaSemana - 1);
+        return horariosDisponiblesMes;
     }
 
     // ======================= REPORTES DE INGRESOS =======================

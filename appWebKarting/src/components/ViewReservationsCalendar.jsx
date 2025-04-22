@@ -18,6 +18,7 @@ const localizer = dateFnsLocalizer({
 
 const ViewReservationsCalendar = () => {
   const [eventos, setEventos] = useState([]);
+  const [currentDate, setCurrentDate] = useState(new Date()); // Track the current date being viewed
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -26,7 +27,7 @@ const ViewReservationsCalendar = () => {
     now.setSeconds(0);
     now.setMilliseconds(0);
 
-    reservaService.horariosDisponiblesSemana()
+    reservaService.horariosDisponiblesMes()
       .then((res) => {
         const data = res.data;
         const eventosGenerados = [];
@@ -69,7 +70,27 @@ const ViewReservationsCalendar = () => {
       .catch((err) => {
         console.error("Error al obtener horarios:", err);
       });
-  }, [navigate]);
+  }, [navigate, currentDate]); // Re-run when the currentDate changes
+
+  const handleNavigate = (date) => {
+    // This function is triggered when the user navigates through the calendar
+    setCurrentDate(date); // Update the current date being viewed
+  };
+
+  const eventStyleGetter = (event) => {
+    let backgroundColor = '#2196f3';
+
+    return {
+      style: {
+        backgroundColor,
+        borderRadius: '5px',
+        opacity: 0.9,
+        color: 'white',
+        border: 'none',
+        padding: '2px 4px',
+      }
+    };
+  };
 
   return (
     <div className="calendar-page">
@@ -102,6 +123,8 @@ const ViewReservationsCalendar = () => {
             previous: 'Anterior',
             next: 'Siguiente',
           }}
+          date={currentDate} // Set current date for the calendar
+          onNavigate={handleNavigate} // This will handle navigation (previous, next, today)
         />
       </div>
     </div>

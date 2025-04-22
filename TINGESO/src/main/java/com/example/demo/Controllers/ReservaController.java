@@ -116,13 +116,13 @@ public class ReservaController {
     }
 
     /**
-     * Obtener Horario Disponibles en la semana
+     * Obtener Horarios DISPONIBLES del mes actual
      */
-    @GetMapping("/horariosDisponiblesSemana")
-    public ResponseEntity<Map<LocalDate, List<String>>> getHorariosDisponiblesSemana() {
+    @GetMapping("/horariosDisponiblesMes")
+    public ResponseEntity<Map<LocalDate, List<String>>> getHorariosDisponiblesMes() {
         try {
-            LocalDate inicioSemana = reservaService.calcularInicioSemana(LocalDate.now()); // Calcula el inicio de la semana a partir de la fecha actual
-            Map<LocalDate, List<String>> horarios = reservaService.obtenerHorariosDisponiblesSemana(inicioSemana);
+            LocalDate hoy = LocalDate.now(); // Fecha actual para determinar el mes
+            Map<LocalDate, List<String>> horarios = reservaService.obtenerHorariosDisponiblesMes(hoy);
             return ResponseEntity.ok(horarios);
         } catch (Exception e) {
             e.printStackTrace();
@@ -131,19 +131,20 @@ public class ReservaController {
     }
 
     /**
-     * Obtener Horarios que tienen reserva en la semana
+     * Obtener Horarios OCUPADOS del mes actual
      */
-    @GetMapping("/horariosOcupadosSemana")
-    public ResponseEntity<Map<LocalDate, List<String>>> getHorariosOcupadosSemana() {
+    @GetMapping("/horariosOcupadosMes")
+    public ResponseEntity<Map<LocalDate, List<String>>> getHorariosOcupadosMes() {
         try {
-            LocalDate inicioSemana = reservaService.calcularInicioSemana(LocalDate.now()); // Calcula el inicio de la semana a partir de la fecha actual
-            Map<LocalDate, List<String>> horariosOcupados = reservaService.obtenerHorariosOcupadosSemana(inicioSemana);
+            LocalDate hoy = LocalDate.now(); // Fecha actual para determinar el mes
+            Map<LocalDate, List<String>> horariosOcupados = reservaService.obtenerHorariosOcupadosMes(hoy);
             return ResponseEntity.ok(horariosOcupados);
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.badRequest().build();
         }
     }
+
 
     /**
      * Obtener el ingreso en la pista por cantidad de vueltas o tiempo maximo
@@ -180,6 +181,19 @@ public class ReservaController {
                                             @RequestParam LocalTime horaInicio,
                                             @RequestParam LocalTime horaFin) {
         return reservaService.obtenerReservaPorFechaHoraInicioYHoraFin(fechaInicio, horaInicio, horaFin);
+    }
+
+    @GetMapping("/getInfoReserva/{id}")
+    public ResponseEntity<String> obtenerInformacionReserva(@PathVariable Long id) {
+        Optional<Reserva> reservaOptional = reservaService.findById(id);
+
+        if (reservaOptional.isPresent()) {
+            Reserva reserva = reservaOptional.get();
+            String informacionReserva = reservaService.obtenerInformacionReservaConComprobante(reserva);
+            return ResponseEntity.ok(informacionReserva);
+        } else {
+            return ResponseEntity.notFound().build();  // Retorna 404 si no se encuentra la reserva
+        }
     }
 
 }

@@ -186,7 +186,7 @@ public class EmpleadoService {
         );
 
         // Generar el resumen y PDF
-        String resumen = reservaService.obtenerInformacionReservaConComprobante(reserva, nombreCliente);
+        String resumen = reservaService.obtenerInformacionReservaConComprobante(reserva);
         File pdf = generarPDFReserva(resumen);
 
         // Enviar correo con PDF a todos los involucrad
@@ -196,6 +196,8 @@ public class EmpleadoService {
             .forEach(correo -> enviarCorreoReservaConPDF(correo, "Aquí está tu resumen de reserva", pdf));
 
          */
+
+
 
 
         return reserva;

@@ -136,12 +136,12 @@ const GenerateReservation = () => {
             <Box component="form" onSubmit={(e) => e.preventDefault()}>
               {/* Dropdown para el número de vueltas de tiempo máximo (10, 15, 20) */}
               <FormControl fullWidth margin="normal">
-                <InputLabel id="num-vueltas-label">Número de Vueltas de Tiempo Máximo</InputLabel>
+                <InputLabel id="num-vueltas-label">Número de Vueltas o Tiempo Máximo (minutos)</InputLabel>
                 <Select
                   labelId="num-vueltas-label"
                   value={numVueltasTiempoMaximo}
                   onChange={(e) => setNumVueltasTiempoMaximo(e.target.value)}
-                  label="Número de Vueltas de Tiempo Máximo"
+                  label="Número de Vueltas o Tiempo Máximo"
                 >
                   {[10, 15, 20].map((value) => (
                     <MenuItem key={value} value={value}>
