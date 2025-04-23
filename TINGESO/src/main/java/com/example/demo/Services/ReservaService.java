@@ -151,9 +151,6 @@ public class ReservaService {
         } else if (reserva.getNum_vueltas_tiempo_maximo() == 20) {
             precioBase = 25000;
             duracion = 40;
-        } else if (reserva.getNum_vueltas_tiempo_maximo() == 5) {
-            precioBase = 10000;
-            duracion = 20;
         }
 
         // Aumentar precio si es fin de semana o feriado
@@ -162,7 +159,7 @@ public class ReservaService {
         boolean esFeriado = esDiaFeriado(fecha);
 
         if (esFinDeSemana || esFeriado) {
-            precioBase *= 1.15;
+            precioBase = (int) Math.round(precioBase * 1.15);
         }
 
         reserva.setPrecio_regular(precioBase);
