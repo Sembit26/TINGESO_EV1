@@ -109,7 +109,7 @@ const GenerateReservation = () => {
       navigate('/horariosDisponibles');
     } catch (err) {
       console.error("Error al generar la reserva:", err);
-      setInfoMessage('Hola, se produjo un error, chao');
+      setInfoMessage('Hola, se produjo un error, intente en otro horario.');
       setOpenInfoModal(true);
     }
   };
