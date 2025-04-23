@@ -190,15 +190,9 @@ public class EmpleadoService {
         File pdf = generarPDFReserva(resumen);
 
         // Enviar correo con PDF a todos los involucrad
-        /*
         nombreCorreo.values().stream()
             .filter(correo -> correo != null && !correo.trim().isEmpty())
             .forEach(correo -> enviarCorreoReservaConPDF(correo, "Aquí está tu resumen de reserva", pdf));
-
-         */
-
-
-
 
         return reserva;
     }
