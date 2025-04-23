@@ -312,6 +312,183 @@ public class ReservaServiceTest {
         assertTrue(info.contains("10000")); // Esta línea ahora sí debería pasar
     }
 
+    private Reserva crearReserva(LocalTime inicio, LocalTime fin) {
+        Reserva r = new Reserva();
+        r.setHoraInicio(inicio);
+        r.setHoraFin(fin);
+        return r;
+    }
+
+
+    @Test
+    void testObtenerHorariosOcupadosMes() {
+        // Fecha cualquiera dentro de mayo 2025
+        LocalDate fecha = LocalDate.of(2025, 5, 10);
+
+        // Simular reservas para dos días
+        List<Reserva> reservasDia5 = List.of(
+                crearReserva(LocalTime.of(10, 0), LocalTime.of(10, 20)),
+                crearReserva(LocalTime.of(11, 0), LocalTime.of(11, 30)),
+                crearReserva(LocalTime.of(12, 0), LocalTime.of(12, 45))
+        );
+
+        List<Reserva> reservasDia10 = List.of(
+                crearReserva(LocalTime.of(9, 0), LocalTime.of(9, 15)),
+                crearReserva(LocalTime.of(14, 0), LocalTime.of(14, 30))
+        );
+
+        // Mockear los días con reservas
+        when(reservaRepository.findByFechaInicioOrderByHoraInicioAsc(LocalDate.of(2025, 5, 5)))
+                .thenReturn(reservasDia5);
+        when(reservaRepository.findByFechaInicioOrderByHoraInicioAsc(LocalDate.of(2025, 5, 10)))
+                .thenReturn(reservasDia10);
+
+        // Mockear los demás días con listas vacías
+        for (int d = 1; d <= 31; d++) {
+            LocalDate dia = LocalDate.of(2025, 5, d);
+            if (!dia.equals(LocalDate.of(2025, 5, 5)) && !dia.equals(LocalDate.of(2025, 5, 10))) {
+                when(reservaRepository.findByFechaInicioOrderByHoraInicioAsc(dia))
+                        .thenReturn(List.of());
+            }
+        }
+
+        // Act
+        Map<LocalDate, List<String>> resultado = reservaService.obtenerHorariosOcupadosMes(fecha);
+
+        // Assert
+        assertEquals(31, resultado.size()); // Mayo tiene 31 días
+        assertEquals(List.of("10:00 - 10:20", "11:00 - 11:30", "12:00 - 12:45"), resultado.get(LocalDate.of(2025, 5, 5)));
+        assertEquals(List.of("09:00 - 09:15", "14:00 - 14:30"), resultado.get(LocalDate.of(2025, 5, 10)));
+        assertEquals(List.of(), resultado.get(LocalDate.of(2025, 5, 1))); // Un día sin reservas
+    }
+
+
+    @Test
+    void testObtenerHorariosDisponiblesMes() {
+        LocalDate fechaReferencia = LocalDate.of(2025, 5, 1);
+
+        // Día 1: sin reservas
+        when(reservaRepository.findByFechaInicioOrderByHoraInicioAsc(LocalDate.of(2025, 5, 1)))
+                .thenReturn(new ArrayList<>());
+
+        // Día 2: una reserva a mitad de la tarde
+        when(reservaRepository.findByFechaInicioOrderByHoraInicioAsc(LocalDate.of(2025, 5, 2)))
+                .thenReturn(new ArrayList<>(List.of(
+                        crearReserva(LocalTime.of(15, 0), LocalTime.of(15, 30))
+                )));
+
+        // Día 3: reservas seguidas
+        when(reservaRepository.findByFechaInicioOrderByHoraInicioAsc(LocalDate.of(2025, 5, 3)))
+                .thenReturn(new ArrayList<>(List.of(
+                        crearReserva(LocalTime.of(14, 0), LocalTime.of(15, 0)),
+                        crearReserva(LocalTime.of(15, 0), LocalTime.of(19, 30))
+                )));
+
+        // Día 4: reserva al final
+        when(reservaRepository.findByFechaInicioOrderByHoraInicioAsc(LocalDate.of(2025, 5, 4)))
+                .thenReturn(new ArrayList<>(List.of(
+                        crearReserva(LocalTime.of(19, 0), LocalTime.of(20, 0))
+                )));
+
+        // Día 5: todo ocupado
+        when(reservaRepository.findByFechaInicioOrderByHoraInicioAsc(LocalDate.of(2025, 5, 5)))
+                .thenReturn(new ArrayList<>(List.of(
+                        crearReserva(LocalTime.of(14, 0), LocalTime.of(20, 0))
+                )));
+
+        Map<LocalDate, List<String>> resultado = reservaService.obtenerHorariosDisponiblesMes(fechaReferencia);
+
+        // Verificar horarios libres para cada día
+
+        // Día 1: Todo el día libre de 14:00 a 20:00
+        assertTrue(resultado.get(LocalDate.of(2025, 5, 1)).contains("14:00 - 20:00"));
+
+        // Día 2: Horarios disponibles antes y después de la reserva (de 14:00 a 15:00 y de 15:30 a 20:00)
+        assertTrue(resultado.get(LocalDate.of(2025, 5, 2)).contains("14:00 - 15:00"));
+        assertTrue(resultado.get(LocalDate.of(2025, 5, 2)).contains("15:30 - 20:00"));
+
+        // Día 3: Horario disponible al final (de 19:30 a 20:00)
+        assertTrue(resultado.get(LocalDate.of(2025, 5, 3)).contains("19:30 - 20:00"));
+
+        // Día 4: Horario disponible antes de la reserva (de 14:00 a 19:00)
+        assertTrue(resultado.get(LocalDate.of(2025, 5, 4)).contains("14:00 - 19:00"));
+
+        // Día 5: Sin horarios libres (todo el día ocupado)
+        assertTrue(resultado.get(LocalDate.of(2025, 5, 5)).isEmpty());
+
+        // Validar el caso de 30 minutos de duración libre (si horaLibreActual es antes de inicioReserva)
+        // Esto se probaría especialmente cuando se comparan los tiempos libres con la reserva que ocurre después.
+        List<String> horariosDia = resultado.get(LocalDate.of(2025, 5, 2));
+        // Si se agregaron correctamente los intervalos antes de la reserva (14:00 - 15:00) y después de la reserva (15:30 - 20:00)
+        assertTrue(horariosDia.contains("14:00 - 15:00"));
+        assertTrue(horariosDia.contains("15:30 - 20:00"));
+    }
+
+    @Test
+    public void testObtenerReservasPorRangoDeMeses_validas() {
+        // Definir el rango de fechas
+        LocalDate fechaInicio = LocalDate.of(2025, 5, 1);
+        LocalDate fechaFin = LocalDate.of(2025, 5, 31);
+
+        // Simular el comportamiento del repositorio
+        when(reservaRepository.findByFechaInicioBetween(fechaInicio.withDayOfMonth(1), fechaFin.withDayOfMonth(fechaFin.lengthOfMonth())))
+                .thenReturn(List.of(reserva));
+
+        // Llamar al método del servicio
+        List<Reserva> reservas = reservaService.obtenerReservasPorRangoDeMeses(fechaInicio, fechaFin);
+
+        // Verificar que la lista de reservas no esté vacía
+        assertNotNull(reservas);
+        assertEquals(1, reservas.size());
+        assertEquals(reserva, reservas.get(0));
+
+        // Verificar que el repositorio haya sido llamado correctamente
+        verify(reservaRepository, times(1))
+                .findByFechaInicioBetween(fechaInicio.withDayOfMonth(1), fechaFin.withDayOfMonth(fechaFin.lengthOfMonth()));
+    }
+
+    @Test
+    public void testObtenerReservasPorRangoDeMeses_fechaInicioPosteriorAFin() {
+        // Definir fechas con fecha de inicio posterior a la fecha de fin
+        LocalDate fechaInicio = LocalDate.of(2025, 6, 1);
+        LocalDate fechaFin = LocalDate.of(2025, 5, 31);
+
+        // Verificar que el servicio lanza una excepción cuando la fecha de inicio es posterior a la de fin
+        assertThrows(IllegalArgumentException.class, () -> {
+            reservaService.obtenerReservasPorRangoDeMeses(fechaInicio, fechaFin);
+        });
+    }
+
+    @Test
+    public void testObtenerReservasPorRangoDeMeses_rangoVacio() {
+        // Definir un rango de fechas que no debería retornar resultados
+        LocalDate fechaInicio = LocalDate.of(2025, 4, 1);
+        LocalDate fechaFin = LocalDate.of(2025, 4, 30);
+
+        // Simular que el repositorio no devuelve resultados
+        when(reservaRepository.findByFechaInicioBetween(fechaInicio.withDayOfMonth(1), fechaFin.withDayOfMonth(fechaFin.lengthOfMonth())))
+                .thenReturn(List.of());
+
+        // Llamar al método del servicio
+        List<Reserva> reservas = reservaService.obtenerReservasPorRangoDeMeses(fechaInicio, fechaFin);
+
+        // Verificar que la lista de reservas esté vacía
+        assertNotNull(reservas);
+        assertTrue(reservas.isEmpty());
+
+        // Verificar que el repositorio haya sido llamado correctamente
+        verify(reservaRepository, times(1))
+                .findByFechaInicioBetween(fechaInicio.withDayOfMonth(1), fechaFin.withDayOfMonth(fechaFin.lengthOfMonth()));
+    }
+
+
+
+
+
+
+
+
+
 
 
 
