@@ -78,7 +78,7 @@
 			<artifactId>lombok</artifactId>
 			<!-- <optional>true</optional> CUALQUIER COSA BORRAR LO DE ABAJO Y DEJAR ESTO-->
 			<version>1.18.30</version>  <!-- ✅ Se añadió versión -->
-			<scope>provided</scope>  <!-- ✅ Se agregó scope correcto -->
+			<scope>provided</scope>
 		</dependency>
 
 		<dependency>
@@ -87,6 +87,8 @@
 			<scope>test</scope>
 		</dependency>
 	</dependencies>
+
+	
 
 	<build>
 		<plugins>
@@ -100,7 +102,7 @@
 							<artifactId>lombok</artifactId>
 							<!-- BORRAR LAS DOS COSAS DE ABAJO EN CASO DE EQUIS COSA -->
 							<version>1.18.30</version>
-							<scope>provided</scope>  <!-- ✅ Se agregó el scope recomendado -->
+							<!-- <scope>provided</scope>  - ✅ Se agregó el scope recomendado -->
 						</path>
 					</annotationProcessorPaths>
 				</configuration>
@@ -119,5 +121,7 @@
 			</plugin>
 		</plugins>
 	</build>
+
+
 
 </project>

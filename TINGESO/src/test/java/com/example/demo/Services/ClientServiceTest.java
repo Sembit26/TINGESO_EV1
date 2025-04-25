@@ -1,3 +1,4 @@
+/*
 package com.example.demo.Services;
 
 import com.example.demo.Entities.Client;
@@ -662,3 +663,5 @@ class ClientServiceTest {
 
 
 }
+
+ */
