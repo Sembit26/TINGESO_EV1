@@ -23,7 +23,7 @@ pipeline {
 
         stage('Build and Push Docker Image') {
             steps {
-                dir("TINGESO"{
+                dir("TINGESO"){
                     script {
                         withDockerRegistry(credentialsId: "docker-credentials"){
                             bat 'docker build -t sembit26/appwebkarting-backend .'
