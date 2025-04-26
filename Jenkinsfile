@@ -29,7 +29,7 @@ pipeline {
                             bat 'docker build -t sembit26/appwebkarting-backend .'
                         }
                         bat 'docker build -t sembit26/appwebkarting-backend .'
-                        bat 'docker push sembit26/appwebkarting-backend .'
+                        bat 'docker push sembit26/appwebkarting-backend'
                     }
                 }
             }
