@@ -73,4 +73,3 @@ networks:
 
 volumes:
   tingeso_evaluacion1_postgres_data:
-    external: true
