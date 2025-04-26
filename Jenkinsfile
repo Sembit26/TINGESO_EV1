@@ -6,38 +6,32 @@ pipeline {
     stages {
         stage('Build maven') {
             steps {
-                checkout scmGit(
-                    branches: [[name: '*/main']],
-                    extensions: [],
-                    userRemoteConfigs: [[url: 'https://github.com/Sembit26/TINGESO_EV1']]
-                )
-                bat 'mvn clean package'
-            }
-        }
-
-        stage('Unit Tests') {
-            steps {
-                bat 'mvn test'
-            }
-        }
-
-        stage('Build docker image') {
-            steps {
-                script {
-                    bat 'docker build -t sembit26/appwebkarting-backend .'
+                checkout scmGit(branches: [[name: '*/main']], extensions: [], userRemoteConfigs: [[url: 'https://github.com/Sembit26/TINGESO_EV1']])
+                dir("TINGESO"){
+                    bat 'mvn clean package'
                 }
             }
         }
 
-        stage('Push image to Docker Hub') {
+        stage('Test') {
             steps {
-                script {
-                    // Usar la credencial de Docker Hub para login
-                    withCredentials([string(credentialsId: 'dhpswid', variable: 'dhpsw')]) {
-                        bat 'docker login -u sembit26 -p %dhpsw%'
+                dir("TINGESO"){
+                    bat 'mvn test'
+                }
+            }
+        }
+
+        stage('Build and Push Docker Image') {
+            steps {
+                dir("TINGESO"{
+                    script {
+                        withDockerRegistry(credentialsId: "docker-credentials"){
+                            bat 'docker build -t sembit26/appwebkarting-backend .'
+                        }
+                        bat 'docker build -t sembit26/appwebkarting-backend .'
+                        bat 'docker push sembit26/appwebkarting-backend .'
                     }
-                    bat 'docker push sembit26/appwebkarting-backend'
-                }
+                })
             }
         }
     }
