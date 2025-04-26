@@ -1,4 +1,3 @@
-/*
 package com.example.demo.Services;
 
 import com.example.demo.Entities.Client;
@@ -37,6 +36,7 @@ class ClientServiceTest {
     private ReservaService reservaService;
 
     private File archivoGenerado;
+
     private final String resumenTexto = "Este es un resumen de la reserva";
 
     @BeforeEach
@@ -664,4 +664,3 @@ class ClientServiceTest {
 
 }
 
- */

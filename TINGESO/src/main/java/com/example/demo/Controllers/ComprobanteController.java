@@ -14,6 +14,7 @@ import java.util.*;
  */
 @RestController
 @RequestMapping("/api/comprobantes")
+@CrossOrigin("*")
 public class ComprobanteController {
 
     @Autowired

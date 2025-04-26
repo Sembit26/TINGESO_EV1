@@ -13,6 +13,7 @@ import java.util.*;
 
 @RestController
 @RequestMapping("/api/clients")
+@CrossOrigin("*")
 public class ClientController {
 
     @Autowired

@@ -1,83 +1,76 @@
+version: "3.8"
+
 services:
+
+# Servicio de PostgreSQL (nuevo)
   postgres:
-    image: postgres:latest
-    container_name: postgres_container
+    image: postgres
+    container_name: tingeso-postgres
     environment:
-      DB_HOST: dbappweb
-      DB_USERNAME: postgres
-      DB_PASSWORD: holamundo
-    ports:
-      - "5432:5432"
+      - POSTGRES_DB=dbappweb
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=holamundo
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - tingeso_evaluacion1_postgres_data:/var/lib/postgresql/data
     networks:
-      - app-network
+      - backend-network
 
-  # Backend
-  backend1:
-    image: sembit26/appwebkarting-backend
-    environment:
-      - DB_HOST=${DB_HOST}
-      - DB_USERNAME=${DB_USERNAME}
-      - DB_PASSWORD=${DB_PASSWORD}
-      - PORT=${PORT}
-    networks:
-      - app-network
-    expose:
-      - "8090"  
-
-  backend2:
-    image: sembit26/appwebkarting-backend
-    environment:
-      - DB_HOST=${DB_HOST}
-      - DB_USERNAME=${DB_USERNAME}
-      - DB_PASSWORD=${DB_PASSWORD}
-      - PORT=${PORT}  
-    networks:
-      - app-network
-    expose:
-      - "8090"   
-
-  # Frontend
+  # Frontend services
   frontend1:
     image: sembit26/appwebkarting-frontend
     networks:
-      - app-network
+      - frontend-network
 
   frontend2:
     image: sembit26/appwebkarting-frontend
     networks:
-      - app-network
+      - frontend-network
 
-  # nginx para el frontend
+  # Backend services
+  backend1:
+    image: sembit26/appwebkarting-backend
+    environment:
+      - DB_HOST=tingeso-postgres
+    networks:
+      - backend-network
+
+  backend2:
+    image: sembit26/appwebkarting-backend
+    environment:
+      - DB_HOST=tingeso-postgres
+    networks:
+      - backend-network
+
+  # Nginx for frontend load balancing
   nginx-frontend:
     image: nginx:latest
+    ports:
+      - "8070:80"
     volumes:
       - ./nginx-frontend.conf:/etc/nginx/nginx.conf
-    ports:
-      - "8070:80"   
     depends_on:
       - frontend1
       - frontend2
     networks:
-      - app-network
+      - frontend-network
 
-  # nginx para el backend
+  # Nginx for backend load balancing
   nginx-backend:
     image: nginx:latest
+    ports:
+      - "8090:8090"
     volumes:
       - ./nginx-backend.conf:/etc/nginx/nginx.conf
-    ports:
-      - "8090:8090"  
     depends_on:
       - backend1
       - backend2
     networks:
-      - app-network
+      - backend-network
 
 networks:
-  app-network:
+  frontend-network:
+  backend-network:
 
 volumes:
-  postgres_data:
-    driver: local
+  tingeso_evaluacion1_postgres_data:
+    external: true

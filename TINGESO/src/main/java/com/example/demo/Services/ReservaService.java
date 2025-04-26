@@ -87,13 +87,6 @@ public class ReservaService {
             horaMaxima = LocalTime.of(19, 20);
         }
 
-        LocalTime horaMinima = LocalTime.of(14, 0);
-
-        // Verificar que la hora de inicio esté dentro del rango permitido
-        if (horaInicio.isBefore(horaMinima) || horaInicio.isAfter(horaMaxima)) {
-            throw new RuntimeException("La hora de inicio debe estar entre las 14:00 y las " + horaMaxima + ".");
-        }
-
         // Crear la reserva
         Reserva reserva = new Reserva();
         reserva.setNum_vueltas_tiempo_maximo(numVueltasTiempoMaximo);
@@ -166,7 +159,7 @@ public class ReservaService {
         reserva.setDuracion_total(duracion);
     }
 
-    private boolean esDiaFeriado(LocalDate fecha) {
+    public boolean esDiaFeriado(LocalDate fecha) {
         List<LocalDate> feriados = List.of(
                 LocalDate.of(2025, 1, 1),
                 LocalDate.of(2025, 5, 1),
@@ -210,48 +203,62 @@ public class ReservaService {
 
     // ======================= HORARIOS DISPONIBLES =======================
 
-    public Map<LocalDate, List<String>> obtenerHorariosOcupadosMes(LocalDate fechaCualquieraDelMes) {
+    public Map<LocalDate, List<String>> obtenerTodosLosHorariosOcupados() {
+        List<Reserva> reservas = reservaRepository.findAll(); // Obtener todas las reservas
         Map<LocalDate, List<String>> horariosOcupados = new HashMap<>();
 
-        // Obtener el primer y último día del mes
-        LocalDate primerDiaDelMes = fechaCualquieraDelMes.withDayOfMonth(1);
-        LocalDate ultimoDiaDelMes = fechaCualquieraDelMes.withDayOfMonth(fechaCualquieraDelMes.lengthOfMonth());
+        for (Reserva reserva : reservas) {
+            LocalDate fecha = reserva.getFechaInicio(); // Asumiendo que la entidad tiene una fecha de inicio
+            LocalTime horaInicio = reserva.getHoraInicio();
+            LocalTime horaFin = reserva.getHoraFin();
+            String horario = horaInicio + " - " + horaFin;
 
-        // Recorrer todos los días del mes
-        for (LocalDate dia = primerDiaDelMes; !dia.isAfter(ultimoDiaDelMes); dia = dia.plusDays(1)) {
-            List<Reserva> reservasDelDia = reservaRepository.findByFechaInicioOrderByHoraInicioAsc(dia);
-            List<String> horarios = new ArrayList<>();
-
-            for (Reserva reserva : reservasDelDia) {
-                LocalTime horaInicio = reserva.getHoraInicio();
-                LocalTime horaFin = reserva.getHoraFin();
-                horarios.add(horaInicio + " - " + horaFin);
-            }
-
-            horariosOcupados.put(dia, horarios);
+            // Agregar el horario a la lista correspondiente a la fecha
+            horariosOcupados.computeIfAbsent(fecha, k -> new ArrayList<>()).add(horario);
         }
 
         return horariosOcupados;
     }
 
-    public Map<LocalDate, List<String>> obtenerHorariosDisponiblesMes(LocalDate fechaCualquieraDelMes) {
+
+
+    // ======================= REPORTES DE INGRESOS =======================
+
+    public List<Reserva> obtenerReservasPorRangoDeMeses(LocalDate fechaInicio, LocalDate fechaFin) {
+        // Validar que la fecha de inicio sea antes o igual a la fecha de fin
+        if (fechaInicio.isAfter(fechaFin)) {
+            throw new IllegalArgumentException("La fecha de inicio no puede ser posterior a la fecha de fin.");
+        }
+
+        // Ajustar fechas al primer día del mes y al último día del mes
+        LocalDate inicioMes = fechaInicio.withDayOfMonth(1);
+        LocalDate finMes = fechaFin.withDayOfMonth(fechaFin.lengthOfMonth());
+
+        return reservaRepository.findByFechaInicioBetween(inicioMes, finMes);
+    }
+
+    public Map<LocalDate, List<String>> obtenerHorariosDisponiblesProximosSeisMeses(LocalDate fechaCualquieraDelMes) {
         Map<LocalDate, List<String>> horariosDisponiblesMes = new LinkedHashMap<>();
 
-        // Horario fijo del kartódromo
-        LocalTime horaInicioDia = LocalTime.of(14, 0);
-        LocalTime horaFinDia = LocalTime.of(20, 0);
+        LocalDate fechaInicio = fechaCualquieraDelMes.withDayOfMonth(1);
+        LocalDate fechaFin = fechaInicio.plusMonths(6).withDayOfMonth(
+                fechaInicio.plusMonths(6).lengthOfMonth()
+        );
 
-        // Obtener primer y último día del mes
-        LocalDate primerDiaDelMes = fechaCualquieraDelMes.withDayOfMonth(1);
-        LocalDate ultimoDiaDelMes = fechaCualquieraDelMes.withDayOfMonth(fechaCualquieraDelMes.lengthOfMonth());
+        for (LocalDate fecha = fechaInicio; !fecha.isAfter(fechaFin); fecha = fecha.plusDays(1)) {
+            // Ajustar el horario de inicio según el tipo de día
+            LocalTime horaInicioDia;
+            if (esFinDeSemana(fecha) || esDiaFeriado(fecha)) {
+                horaInicioDia = LocalTime.of(10, 0);
+            } else {
+                horaInicioDia = LocalTime.of(14, 0);
+            }
+            LocalTime horaFinDia = LocalTime.of(22, 0);
 
-        for (LocalDate fecha = primerDiaDelMes; !fecha.isAfter(ultimoDiaDelMes); fecha = fecha.plusDays(1)) {
             List<Reserva> reservas = getReservasByFechaInicio(fecha);
             List<String> horariosLibres = new ArrayList<>();
-
             LocalTime horaLibreActual = horaInicioDia;
 
-            // Ordenar reservas por hora de inicio
             reservas.sort(Comparator.comparing(Reserva::getHoraInicio));
 
             for (Reserva reserva : reservas) {
@@ -283,19 +290,9 @@ public class ReservaService {
         return horariosDisponiblesMes;
     }
 
-    // ======================= REPORTES DE INGRESOS =======================
-
-    public List<Reserva> obtenerReservasPorRangoDeMeses(LocalDate fechaInicio, LocalDate fechaFin) {
-        // Validar que la fecha de inicio sea antes o igual a la fecha de fin
-        if (fechaInicio.isAfter(fechaFin)) {
-            throw new IllegalArgumentException("La fecha de inicio no puede ser posterior a la fecha de fin.");
-        }
-
-        // Ajustar fechas al primer día del mes y al último día del mes
-        LocalDate inicioMes = fechaInicio.withDayOfMonth(1);
-        LocalDate finMes = fechaFin.withDayOfMonth(fechaFin.lengthOfMonth());
-
-        return reservaRepository.findByFechaInicioBetween(inicioMes, finMes);
+    public boolean esFinDeSemana(LocalDate fecha) {
+        DayOfWeek dia = fecha.getDayOfWeek();
+        return dia == DayOfWeek.SATURDAY || dia == DayOfWeek.SUNDAY;
     }
 
 

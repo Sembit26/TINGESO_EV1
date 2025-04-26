@@ -1,17 +1,17 @@
-import api from "./baseUrl";  // Usando minúsculas en todo el nombre del archivo
+import httClient from "../http-common";
 
 const CLIENT_API_URL = "/api/clients"
 
 const loginClient = (data) => {
-  return api.post(`${CLIENT_API_URL}/login`, data);
+  return httClient.post(`${CLIENT_API_URL}/login`, data);
 };
 
 const register = (data) => {
-  return api.post(`${CLIENT_API_URL}/register`, data);
+  return httClient.post(`${CLIENT_API_URL}/register`, data);
 };
 
 const generarReserva = (idCliente, data) => {
-  return api.post(`${CLIENT_API_URL}/generarReserva/${idCliente}`, data)
+  return httClient.post(`${CLIENT_API_URL}/generarReserva/${idCliente}`, data)
 }
 
 

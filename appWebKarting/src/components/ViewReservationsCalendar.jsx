@@ -22,12 +22,12 @@ const ViewReservationsCalendar = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const cliente = sessionStorage.getItem('cliente');
+    //const cliente = sessionStorage.getItem('cliente');
     const now = new Date();
     now.setSeconds(0);
     now.setMilliseconds(0);
 
-    reservaService.horariosDisponiblesMes()
+    reservaService.horariosDisponiblesSeisMeses()
       .then((res) => {
         const data = res.data;
         const eventosGenerados = [];
@@ -106,8 +106,8 @@ const ViewReservationsCalendar = () => {
           defaultView="week"
           step={20}
           timeslots={2}
-          min={new Date(1970, 1, 1, 14, 0)}
-          max={new Date(1970, 1, 1, 20, 0)}
+          min={new Date(1970, 1, 1, 10, 0)}
+          max={new Date(1970, 1, 1, 22, 0)}
           style={{ height: '75vh', width: '100%' }}
           onSelectEvent={(event) => {
             const fecha = format(event.start, 'yyyy-MM-dd');

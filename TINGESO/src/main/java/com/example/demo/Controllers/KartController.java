@@ -10,6 +10,7 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/karts")
+@CrossOrigin("*")
 public class KartController {
 
     @Autowired

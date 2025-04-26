@@ -1,19 +1,23 @@
-/*
+
 package com.example.demo.Services;
 
 import com.example.demo.Entities.Comprobante;
+import com.example.demo.Entities.Kart;
 import com.example.demo.Entities.Reserva;
 import com.example.demo.Repositories.ReservaRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.Month;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -28,6 +32,9 @@ public class ReservaServiceTest {
 
     @Mock
     private ComprobanteService comprobanteService;
+
+    @Mock
+    private KartService kartService;
 
     private Reserva reserva;
 
@@ -313,116 +320,255 @@ public class ReservaServiceTest {
         assertTrue(info.contains("10000")); // Esta línea ahora sí debería pasar
     }
 
-    private Reserva crearReserva(LocalTime inicio, LocalTime fin) {
-        Reserva r = new Reserva();
-        r.setHoraInicio(inicio);
-        r.setHoraFin(fin);
-        return r;
-    }
-
-
     @Test
-    void testObtenerHorariosOcupadosMes() {
-        // Fecha cualquiera dentro de mayo 2025
-        LocalDate fecha = LocalDate.of(2025, 5, 10);
+    void testObtenerTodosLosHorariosOcupados() {
+        // Arrange
+        Reserva reserva1 = new Reserva();
+        reserva1.setFechaInicio(LocalDate.of(2025, 5, 10));
+        reserva1.setHoraInicio(LocalTime.of(10, 0));
+        reserva1.setHoraFin(LocalTime.of(10, 30));
 
-        // Simular reservas para dos días
-        List<Reserva> reservasDia5 = List.of(
-                crearReserva(LocalTime.of(10, 0), LocalTime.of(10, 20)),
-                crearReserva(LocalTime.of(11, 0), LocalTime.of(11, 30)),
-                crearReserva(LocalTime.of(12, 0), LocalTime.of(12, 45))
-        );
+        Reserva reserva2 = new Reserva();
+        reserva2.setFechaInicio(LocalDate.of(2025, 5, 10));
+        reserva2.setHoraInicio(LocalTime.of(11, 0));
+        reserva2.setHoraFin(LocalTime.of(11, 45));
 
-        List<Reserva> reservasDia10 = List.of(
-                crearReserva(LocalTime.of(9, 0), LocalTime.of(9, 15)),
-                crearReserva(LocalTime.of(14, 0), LocalTime.of(14, 30))
-        );
+        Reserva reserva3 = new Reserva();
+        reserva3.setFechaInicio(LocalDate.of(2025, 5, 11));
+        reserva3.setHoraInicio(LocalTime.of(9, 0));
+        reserva3.setHoraFin(LocalTime.of(9, 15));
 
-        // Mockear los días con reservas
-        when(reservaRepository.findByFechaInicioOrderByHoraInicioAsc(LocalDate.of(2025, 5, 5)))
-                .thenReturn(reservasDia5);
-        when(reservaRepository.findByFechaInicioOrderByHoraInicioAsc(LocalDate.of(2025, 5, 10)))
-                .thenReturn(reservasDia10);
+        List<Reserva> todasLasReservas = List.of(reserva1, reserva2, reserva3);
 
-        // Mockear los demás días con listas vacías
-        for (int d = 1; d <= 31; d++) {
-            LocalDate dia = LocalDate.of(2025, 5, d);
-            if (!dia.equals(LocalDate.of(2025, 5, 5)) && !dia.equals(LocalDate.of(2025, 5, 10))) {
-                when(reservaRepository.findByFechaInicioOrderByHoraInicioAsc(dia))
-                        .thenReturn(List.of());
-            }
-        }
+        when(reservaRepository.findAll()).thenReturn(todasLasReservas);
 
         // Act
-        Map<LocalDate, List<String>> resultado = reservaService.obtenerHorariosOcupadosMes(fecha);
+        Map<LocalDate, List<String>> resultado = reservaService.obtenerTodosLosHorariosOcupados();
 
         // Assert
-        assertEquals(31, resultado.size()); // Mayo tiene 31 días
-        assertEquals(List.of("10:00 - 10:20", "11:00 - 11:30", "12:00 - 12:45"), resultado.get(LocalDate.of(2025, 5, 5)));
-        assertEquals(List.of("09:00 - 09:15", "14:00 - 14:30"), resultado.get(LocalDate.of(2025, 5, 10)));
-        assertEquals(List.of(), resultado.get(LocalDate.of(2025, 5, 1))); // Un día sin reservas
+        assertEquals(2, resultado.size()); // 2 días distintos
+
+        // Día 10 de mayo
+        List<String> horariosDia10 = resultado.get(LocalDate.of(2025, 5, 10));
+        assertNotNull(horariosDia10);
+        assertEquals(2, horariosDia10.size());
+        assertTrue(horariosDia10.contains("10:00 - 10:30"));
+        assertTrue(horariosDia10.contains("11:00 - 11:45"));
+
+        // Día 11 de mayo
+        List<String> horariosDia11 = resultado.get(LocalDate.of(2025, 5, 11));
+        assertNotNull(horariosDia11);
+        assertEquals(1, horariosDia11.size());
+        assertEquals("09:00 - 09:15", horariosDia11.get(0));
+    }
+
+    @Test
+    void testObtenerTodosLosHorariosOcupados_SinReservas() {
+        // Arrange
+        when(reservaRepository.findAll()).thenReturn(List.of());
+
+        // Act
+        Map<LocalDate, List<String>> resultado = reservaService.obtenerTodosLosHorariosOcupados();
+
+        // Assert
+        assertNotNull(resultado);
+        assertTrue(resultado.isEmpty());
     }
 
 
     @Test
-    void testObtenerHorariosDisponiblesMes() {
-        LocalDate fechaReferencia = LocalDate.of(2025, 5, 1);
+    void testSinReservasDevuelveHorariosCompletos() {
+        // Dado
+        LocalDate fechaReferencia = LocalDate.of(2025, 5, 1); // Mayo 2025
+        when(reservaRepository.findByFechaInicioOrderByHoraInicioAsc(any()))
+                .thenReturn(new ArrayList<>()); // No hay reservas en ningún día
 
-        // Día 1: sin reservas
-        when(reservaRepository.findByFechaInicioOrderByHoraInicioAsc(LocalDate.of(2025, 5, 1)))
+        // Cuando
+        Map<LocalDate, List<String>> resultado = reservaService.obtenerHorariosDisponiblesProximosSeisMeses(fechaReferencia);
+
+        // Entonces: por ejemplo, validamos el primer día
+        LocalDate primerDia = fechaReferencia.withDayOfMonth(1);
+        List<String> horariosDelPrimerDia = resultado.get(primerDia);
+
+        // Si el 1 de mayo 2025 es día de semana, el horario debe ser 14:00 - 22:00
+        // Si es fin de semana o feriado, debe ser 10:00 - 22:00
+        String horarioEsperado;
+        if (reservaService.esFinDeSemana(primerDia) || reservaService.esDiaFeriado(primerDia)) {
+            horarioEsperado = "10:00 - 22:00";
+        } else {
+            horarioEsperado = "14:00 - 22:00";
+        }
+
+        assertTrue(horariosDelPrimerDia.contains(horarioEsperado));
+    }
+
+    @Test
+    void testReservaIntermediaDivideHorario() {
+        LocalDate fecha = LocalDate.of(2025, 5, 5); // Lunes (día hábil)
+
+        Reserva reserva = new Reserva();
+        reserva.setHoraInicio(LocalTime.of(16, 0));
+        reserva.setHoraFin(LocalTime.of(16, 30));
+
+        when(reservaRepository.findByFechaInicioOrderByHoraInicioAsc(eq(fecha)))
+                .thenReturn(new ArrayList<>(List.of(reserva)));
+
+        when(reservaRepository.findByFechaInicioOrderByHoraInicioAsc(argThat(d -> !d.equals(fecha))))
                 .thenReturn(new ArrayList<>());
 
-        // Día 2: una reserva a mitad de la tarde
-        when(reservaRepository.findByFechaInicioOrderByHoraInicioAsc(LocalDate.of(2025, 5, 2)))
-                .thenReturn(new ArrayList<>(List.of(
-                        crearReserva(LocalTime.of(15, 0), LocalTime.of(15, 30))
-                )));
+        Map<LocalDate, List<String>> resultado = reservaService.obtenerHorariosDisponiblesProximosSeisMeses(fecha);
+        List<String> horarios = resultado.get(fecha);
 
-        // Día 3: reservas seguidas
-        when(reservaRepository.findByFechaInicioOrderByHoraInicioAsc(LocalDate.of(2025, 5, 3)))
-                .thenReturn(new ArrayList<>(List.of(
-                        crearReserva(LocalTime.of(14, 0), LocalTime.of(15, 0)),
-                        crearReserva(LocalTime.of(15, 0), LocalTime.of(19, 30))
-                )));
+        assertTrue(horarios.contains("14:00 - 16:00"), "Debe haber horario libre antes de la reserva");
+        assertTrue(horarios.contains("16:30 - 22:00"), "Debe haber horario libre después de la reserva");
+    }
 
-        // Día 4: reserva al final
-        when(reservaRepository.findByFechaInicioOrderByHoraInicioAsc(LocalDate.of(2025, 5, 4)))
-                .thenReturn(new ArrayList<>(List.of(
-                        crearReserva(LocalTime.of(19, 0), LocalTime.of(20, 0))
-                )));
+    @Test
+    void testGenerarReporteIngresosPorVueltas() {
+        LocalDate fechaInicio = LocalDate.of(2025, 1, 1);
+        LocalDate fechaFin = LocalDate.of(2025, 1, 31);
 
-        // Día 5: todo ocupado
-        when(reservaRepository.findByFechaInicioOrderByHoraInicioAsc(LocalDate.of(2025, 5, 5)))
-                .thenReturn(new ArrayList<>(List.of(
-                        crearReserva(LocalTime.of(14, 0), LocalTime.of(20, 0))
-                )));
+        Reserva reserva1 = new Reserva();
+        reserva1.setNum_vueltas_tiempo_maximo(10);
+        Comprobante comp1 = new Comprobante();
+        comp1.setMonto_total_iva(100.0);
+        reserva1.setComprobante(comp1);
 
-        Map<LocalDate, List<String>> resultado = reservaService.obtenerHorariosDisponiblesMes(fechaReferencia);
+        Reserva reserva2 = new Reserva();
+        reserva2.setNum_vueltas_tiempo_maximo(15);
+        Comprobante comp2 = new Comprobante();
+        comp2.setMonto_total_iva(150.0);
+        reserva2.setComprobante(comp2);
 
-        // Verificar horarios libres para cada día
+        Reserva reserva3 = new Reserva();
+        reserva3.setNum_vueltas_tiempo_maximo(20);
+        Comprobante comp3 = new Comprobante();
+        comp3.setMonto_total_iva(200.0);
+        reserva3.setComprobante(comp3);
 
-        // Día 1: Todo el día libre de 14:00 a 20:00
-        assertTrue(resultado.get(LocalDate.of(2025, 5, 1)).contains("14:00 - 20:00"));
+        Reserva reserva4 = new Reserva();
+        reserva4.setNum_vueltas_tiempo_maximo(5);
+        Comprobante comp4 = new Comprobante();
+        comp4.setMonto_total_iva(50.0);
+        reserva4.setComprobante(comp4);
 
-        // Día 2: Horarios disponibles antes y después de la reserva (de 14:00 a 15:00 y de 15:30 a 20:00)
-        assertTrue(resultado.get(LocalDate.of(2025, 5, 2)).contains("14:00 - 15:00"));
-        assertTrue(resultado.get(LocalDate.of(2025, 5, 2)).contains("15:30 - 20:00"));
+        List<Reserva> reservas = List.of(reserva1, reserva2, reserva3, reserva4);
+        Map<String, List<Reserva>> agrupadas = Map.of("2025-01", reservas);
 
-        // Día 3: Horario disponible al final (de 19:30 a 20:00)
-        assertTrue(resultado.get(LocalDate.of(2025, 5, 3)).contains("19:30 - 20:00"));
+        ReservaService spyService = Mockito.spy(new ReservaService());
+        Mockito.doReturn(reservas).when(spyService).obtenerReservasPorRangoDeMeses(fechaInicio, fechaFin);
+        Mockito.doReturn(agrupadas).when(spyService).agruparReservasPorMesYAnio(reservas);
 
-        // Día 4: Horario disponible antes de la reserva (de 14:00 a 19:00)
-        assertTrue(resultado.get(LocalDate.of(2025, 5, 4)).contains("14:00 - 19:00"));
+        Map<String, Map<String, Double>> reporte = spyService.generarReporteIngresosPorVueltas(fechaInicio, fechaFin);
 
-        // Día 5: Sin horarios libres (todo el día ocupado)
-        assertTrue(resultado.get(LocalDate.of(2025, 5, 5)).isEmpty());
+        assertEquals(1, reporte.size());
+        Map<String, Double> ingresos = reporte.get("2025-01");
 
-        // Validar el caso de 30 minutos de duración libre (si horaLibreActual es antes de inicioReserva)
-        // Esto se probaría especialmente cuando se comparan los tiempos libres con la reserva que ocurre después.
-        List<String> horariosDia = resultado.get(LocalDate.of(2025, 5, 2));
-        // Si se agregaron correctamente los intervalos antes de la reserva (14:00 - 15:00) y después de la reserva (15:30 - 20:00)
-        assertTrue(horariosDia.contains("14:00 - 15:00"));
-        assertTrue(horariosDia.contains("15:30 - 20:00"));
+        assertEquals(100.0, ingresos.get("10"));
+        assertEquals(150.0, ingresos.get("15"));
+        assertEquals(200.0, ingresos.get("20"));
+        assertEquals(500.0, ingresos.get("TOTAL"));
+    }
+
+    @Test
+    void testGenerarReporteIngresosPorGrupoDePersonas() {
+        LocalDate fechaInicio = LocalDate.of(2025, 1, 1);
+        LocalDate fechaFin = LocalDate.of(2025, 1, 31);
+
+        // Reserva para grupo 1-2
+        Reserva r1 = new Reserva();
+        r1.setNum_personas(2);
+        Comprobante c1 = new Comprobante();
+        c1.setMonto_total_iva(100.0);
+        r1.setComprobante(c1);
+
+        // Reserva para grupo 3-5
+        Reserva r2 = new Reserva();
+        r2.setNum_personas(4);
+        Comprobante c2 = new Comprobante();
+        c2.setMonto_total_iva(150.0);
+        r2.setComprobante(c2);
+
+        // Reserva para grupo 6-10
+        Reserva r3 = new Reserva();
+        r3.setNum_personas(7);
+        Comprobante c3 = new Comprobante();
+        c3.setMonto_total_iva(200.0);
+        r3.setComprobante(c3);
+
+        // Reserva para grupo 11-15
+        Reserva r4 = new Reserva();
+        r4.setNum_personas(12);
+        Comprobante c4 = new Comprobante();
+        c4.setMonto_total_iva(250.0);
+        r4.setComprobante(c4);
+
+        // Reserva sin comprobante (debe ignorarse)
+        Reserva r5 = new Reserva();
+        r5.setNum_personas(3);
+        r5.setComprobante(null);
+
+        List<Reserva> reservas = List.of(r1, r2, r3, r4, r5);
+        Map<String, List<Reserva>> agrupadas = Map.of("2025-01", reservas);
+
+        ReservaService spyService = Mockito.spy(new ReservaService());
+        Mockito.doReturn(reservas).when(spyService).obtenerReservasPorRangoDeMeses(fechaInicio, fechaFin);
+        Mockito.doReturn(agrupadas).when(spyService).agruparReservasPorMesYAnio(reservas);
+
+        Map<String, Map<String, Double>> reporte = spyService.generarReporteIngresosPorGrupoDePersonas(fechaInicio, fechaFin);
+
+        assertEquals(1, reporte.size());
+        Map<String, Double> ingresos = reporte.get("2025-01");
+
+        assertEquals(100.0, ingresos.get("1-2"));
+        assertEquals(150.0, ingresos.get("3-5"));
+        assertEquals(200.0, ingresos.get("6-10"));
+        assertEquals(250.0, ingresos.get("11-15"));
+        assertEquals(700.0, ingresos.get("TOTAL"));
+    }
+
+
+
+
+
+    @Test
+    void testAgruparReservasPorMesYAnio() {
+        // Creamos varias reservas con fechas diferentes
+        Reserva reserva1 = new Reserva();
+        reserva1.setFechaInicio(LocalDate.of(2025, 5, 15)); // Mayo 2025
+
+        Reserva reserva2 = new Reserva();
+        reserva2.setFechaInicio(LocalDate.of(2025, 5, 20)); // Mayo 2025
+
+        Reserva reserva3 = new Reserva();
+        reserva3.setFechaInicio(LocalDate.of(2025, 6, 10)); // Junio 2025
+
+        Reserva reserva4 = new Reserva();
+        reserva4.setFechaInicio(LocalDate.of(2025, 6, 25)); // Junio 2025
+
+        Reserva reserva5 = new Reserva();
+        reserva5.setFechaInicio(LocalDate.of(2025, 7, 5)); // Julio 2025
+
+        List<Reserva> reservas = List.of(reserva1, reserva2, reserva3, reserva4, reserva5);
+
+        // Ejecutamos el método
+        Map<String, List<Reserva>> resultado = reservaService.agruparReservasPorMesYAnio(reservas);
+
+        // Verificamos que las claves sean correctas
+        assertTrue(resultado.containsKey("2025-05"), "Debe haber un grupo para mayo 2025");
+        assertTrue(resultado.containsKey("2025-06"), "Debe haber un grupo para junio 2025");
+        assertTrue(resultado.containsKey("2025-07"), "Debe haber un grupo para julio 2025");
+
+        // Verificamos el tamaño de cada grupo
+        assertEquals(2, resultado.get("2025-05").size(), "Mayo debe tener 2 reservas");
+        assertEquals(2, resultado.get("2025-06").size(), "Junio debe tener 2 reservas");
+        assertEquals(1, resultado.get("2025-07").size(), "Julio debe tener 1 reserva");
+
+        // Verificamos que el orden sea el correcto (ordenado por clave año-mes)
+        List<String> keys = new ArrayList<>(resultado.keySet());
+        assertEquals("2025-05", keys.get(0), "El primer grupo debe ser mayo 2025");
+        assertEquals("2025-06", keys.get(1), "El segundo grupo debe ser junio 2025");
+        assertEquals("2025-07", keys.get(2), "El tercer grupo debe ser julio 2025");
     }
 
     @Test
@@ -482,31 +628,51 @@ public class ReservaServiceTest {
                 .findByFechaInicioBetween(fechaInicio.withDayOfMonth(1), fechaFin.withDayOfMonth(fechaFin.lengthOfMonth()));
     }
 
+    @Test
+    void testCrearReserva() {
+        // Mocks necesarios
+        List<Kart> kartsMock = List.of(new Kart(1L, "Modelo A", "KART-001"));
+        Mockito.when(kartService.findAll()).thenReturn(kartsMock);
+
+        // Simula creación de comprobante si es parte de la lógica
+        Comprobante comprobante = new Comprobante();
+        comprobante.setId(1L);
+        comprobante.setMonto_total_iva(357.0);
+        when(comprobanteService.crearComprobante(
+                anyInt(),
+                anyInt(),
+                anyInt(),
+                anyString(),
+                anyString(),
+                anyMap(),
+                anyList()
+        )).thenReturn(comprobante);
 
 
+        // Simula que al guardar la reserva se retorna una con ID asignado
+        Mockito.when(reservaRepository.save(Mockito.any())).thenAnswer(inv -> {
+            Reserva r = inv.getArgument(0);
+            r.setId(1L);
+            return r;
+        });
 
+        // Ahora puedes llamar al método real
+        Reserva reserva = reservaService.crearReserva(
+                10, 1, List.of("correo@example.com"),
+                LocalDate.of(2025, 1, 1),
+                LocalTime.of(15, 0),
+                1,
+                "Juan Pérez",
+                "juan@example.com",
+                Map.of("Juan Pérez", "juan@example.com")
+        );
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+        // Verificaciones
+        assertNotNull(reserva);
+        assertEquals(1, reserva.getNum_personas());
+        assertEquals(357.0, reserva.getComprobante().getMonto_total_iva());
+    }
 
 
 
 }
-
-
- */

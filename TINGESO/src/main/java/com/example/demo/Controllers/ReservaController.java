@@ -18,6 +18,7 @@ import java.util.*;
  */
 @RestController
 @RequestMapping("/api/reservas")
+@CrossOrigin("*")
 public class ReservaController {
 
     @Autowired
@@ -116,13 +117,13 @@ public class ReservaController {
     }
 
     /**
-     * Obtener Horarios DISPONIBLES del mes actual
+     * Obtener Horarios DISPONIBLES de los proximos seis meses
      */
-    @GetMapping("/horariosDisponiblesMes")
-    public ResponseEntity<Map<LocalDate, List<String>>> getHorariosDisponiblesMes() {
+    @GetMapping("/horariosDisponiblesSeisMeses")
+    public ResponseEntity<Map<LocalDate, List<String>>> getHorariosDisponiblesSeisMeses() {
         try {
-            LocalDate hoy = LocalDate.now(); // Fecha actual para determinar el mes
-            Map<LocalDate, List<String>> horarios = reservaService.obtenerHorariosDisponiblesMes(hoy);
+            LocalDate hoy = LocalDate.now(); // Fecha actual
+            Map<LocalDate, List<String>> horarios = reservaService.obtenerHorariosDisponiblesProximosSeisMeses(hoy);
             return ResponseEntity.ok(horarios);
         } catch (Exception e) {
             e.printStackTrace();
@@ -130,21 +131,16 @@ public class ReservaController {
         }
     }
 
-    /**
-     * Obtener Horarios OCUPADOS del mes actual
-     */
-    @GetMapping("/horariosOcupadosMes")
-    public ResponseEntity<Map<LocalDate, List<String>>> getHorariosOcupadosMes() {
+    @GetMapping("/horariosOcupados")
+    public ResponseEntity<Map<LocalDate, List<String>>> getHorariosOcupados() {
         try {
-            LocalDate hoy = LocalDate.now(); // Fecha actual para determinar el mes
-            Map<LocalDate, List<String>> horariosOcupados = reservaService.obtenerHorariosOcupadosMes(hoy);
+            Map<LocalDate, List<String>> horariosOcupados = reservaService.obtenerTodosLosHorariosOcupados();
             return ResponseEntity.ok(horariosOcupados);
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.badRequest().build();
         }
     }
-
 
     /**
      * Obtener el ingreso en la pista por cantidad de vueltas o tiempo maximo

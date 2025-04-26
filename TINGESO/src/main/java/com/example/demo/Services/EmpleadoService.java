@@ -193,7 +193,6 @@ public class EmpleadoService {
         nombreCorreo.values().stream()
             .filter(correo -> correo != null && !correo.trim().isEmpty())
             .forEach(correo -> enviarCorreoReservaConPDF(correo, "Aquí está tu resumen de reserva", pdf));
-
         return reserva;
     }
 

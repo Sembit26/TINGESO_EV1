@@ -45,8 +45,8 @@ const ViewAllReservations = () => {
     now.setMilliseconds(0);
 
     Promise.all([
-      reservaService.horariosDisponiblesMes(),
-      reservaService.horariosOcupadosMes(),
+      reservaService.horariosDisponiblesSeisMeses(),
+      reservaService.obtenerTodasLasReservasOcupadas(),
     ])
       .then(async ([disponiblesRes, ocupadosRes]) => {
         const disponiblesData = disponiblesRes.data;
@@ -164,8 +164,8 @@ const ViewAllReservations = () => {
           defaultView="week"
           step={20}
           timeslots={2}
-          min={new Date(1970, 1, 1, 14, 0)}
-          max={new Date(1970, 1, 1, 20, 0)}
+          min={new Date(1970, 1, 1, 10, 0)}
+          max={new Date(1970, 1, 1, 22, 0)}
           style={{ height: '75vh', width: '100%' }}
           eventPropGetter={eventStyleGetter}
           messages={{

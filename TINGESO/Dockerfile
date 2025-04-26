@@ -1,4 +1,4 @@
-FROM openjdk:20
+FROM openjdk:17
 
 # ARG es para que puedas usarlo con --build-arg si quieres, pero no es obligatorio
 ARG JAR_FILE=target/*.jar

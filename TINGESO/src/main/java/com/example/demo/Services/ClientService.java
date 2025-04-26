@@ -154,6 +154,9 @@ public class ClientService {
             LocalTime horaInicio,
             Map<String, String> nombreCorreo
     ) {
+
+        LocalDate hoy = LocalDate.now();
+
         Optional<Client> clientOpt = findById(id);
         if (clientOpt.isEmpty()) {
             throw new RuntimeException("Cliente no encontrado");
@@ -163,6 +166,11 @@ public class ClientService {
         String nombreCliente = cliente.getName();
         int frecuenciaCliente = cliente.getNum_visitas_al_mes();
         String correoCliente = cliente.getEmail();
+
+        // Comparar mes y año de la fecha actual con la fechaInicio
+        if (hoy.getMonthValue() != fechaInicio.getMonthValue() || hoy.getYear() != fechaInicio.getYear()) {
+            frecuenciaCliente = 0;
+        }
 
         // Agregar cliente principal al map
         nombreCorreo.put(nombreCliente, correoCliente);
@@ -204,7 +212,6 @@ public class ClientService {
         nombreCorreo.values().stream()
                 .filter(correo -> correo != null && !correo.trim().isEmpty())
                 .forEach(correo -> enviarCorreoReservaConPDF(correo, "Aquí está tu resumen de reserva", pdf));
-
         return reserva;
     }
 }
