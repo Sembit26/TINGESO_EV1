@@ -7,7 +7,7 @@ const Home = () => {
   return (
     <Container maxWidth="md" sx={{ mt: 4 }}>
       <Typography variant="h3" align="center" gutterBottom>
-        KartingRM: Gestión Inteligente de Operaciones de Karts
+        KartingRM: Gestión Inteligente de Operaciones de Karts MODERNOS
       </Typography>
       <Box
         sx={{
