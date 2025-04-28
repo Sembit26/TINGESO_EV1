@@ -1,4 +1,3 @@
-/*
 package com.example.demo.Services;
 
 import com.example.demo.Entities.Comprobante;
@@ -672,9 +671,4 @@ public class ReservaServiceTest {
         assertEquals(1, reserva.getNum_personas());
         assertEquals(357.0, reserva.getComprobante().getMonto_total_iva());
     }
-
-
-
 }
-
- */

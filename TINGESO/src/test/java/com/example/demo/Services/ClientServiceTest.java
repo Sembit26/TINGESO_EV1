@@ -1,4 +1,3 @@
-/*
 package com.example.demo.Services;
 
 import com.example.demo.Entities.Client;
@@ -658,12 +657,6 @@ class ClientServiceTest {
         assertTrue(correosCumple.isEmpty(), "Debe eliminar al cumpleañero si no se encuentra en la base");
         verify(clientRepository).save(cliente);
     }
-
-
-
-
-
 }
 
- */
 
